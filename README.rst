@@ -1,24 +1,23 @@
 Standard Git Library for ESMF applications.
 ===========================================
 
-.. image:: https://img.shields.io/pypi/v/new_project.svg
-    :target: https://pypi.org/project/new_project/
+.. image:: https://img.shields.io/pypi/v/esmf-branch-summary.svg
+    :target: https://pypi.org/project/esmf-branch-summary/
     :alt: PyPi Link
 
-.. image:: https://github.com/repo-owner/new_project/actions/workflows/pylint.yml/badge.svg
-    :target: https://github.com/repo-owner/new_project/actions/workflows/pylint.yml
+.. image:: https://github.com/esmf-org/esmf-branch-summary/actions/workflows/pylint.yml/badge.svg
+    :target: https://github.com/esmf-org/esmf-branch-summary/actions/workflows/pylint.yml
     :alt:  Lint and Test
 
-.. image:: https://github.com/repo-owner/new_project/actions/workflows/python-publish.yml/badge.svg
-   :target: https://github.com/repo-owner/new_project/actions/workflows/python-publish.yml
+.. image:: https://github.com/esmf-org/esmf-branch-summary/actions/workflows/python-publish.yml/badge.svg
+   :target: https://github.com/esmf-org/esmf-branch-summary/actions/workflows/python-publish.yml
    :alt: Upload Python Package 
 
-.. image:: https://www.codefactor.io/repository/github/repo-owner/new_project/badge/main
-   :target: https://www.codefactor.io/repository/github/repo-owner/new_project/overview/main
+.. image:: https://www.codefactor.io/repository/github/esmf-org/esmf-branch-summary/badge/main
+   :target: https://www.codefactor.io/repository/github/esmf-org/esmf-branch-summary/overview/main
    :alt: CodeFactor
 
-**new_project** is a 
-
+**esmf-branch-summary** is a CLI tool for generating summary data of testing ESMF framework.
 
 
 Basic Usage
@@ -26,7 +25,7 @@ Basic Usage
 
 ::
 
-    import new_project
+    import esmf-branch-summary
 
 
 Installation
@@ -34,4 +33,4 @@ Installation
 
 ::
 
-    $ pip install new_project
+    $ pip install esmf-branch-summary

@@ -23,15 +23,15 @@ if sys.argv[-1] == "publish":
 required = [""]
 
 setup(
-    name="new_project",
+    name="esmf-branch-summary",
     version="0.0.0",
-    description="new_project description",
+    description="CLI tool for generating summary data of testing ESMF framework",
     long_description=long_description,
     long_description_content_type="text/x-rst",
     author="Ryan Long",
     author_email="ryan.long@noaa.gov",
     url="",
-    py_modules=["new_project"],
+    py_modules=["esmf-branch-summary"],
     install_requires=required,
     tests_require=["pytest"],
     license="MIT",
