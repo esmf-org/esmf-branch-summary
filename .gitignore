@@ -1,0 +1,7 @@
+__pycache__
+.idea/
+.vscode/settings.json
+*egg-info*
+build/
+dist/
+venv/
