@@ -32,7 +32,7 @@ setup(
     author_email="ryan.long@noaa.gov",
     url="",
     py_modules=["esmf-branch-summary"],
-    install_requires=required,
+    install_requires=["esmf-git"],
     tests_require=["pytest"],
     license="MIT",
     classifiers=[
@@ -58,4 +58,9 @@ setup(
         ],
         "test": ["pytest", "pytest-cov", "pytest-forked", "pytest-xdist", "tox"],
     },
+    entry_points={
+    'console_scripts': [
+        'esmf-branch-summary = esmf_branch_summary:main',
+    ],
+},
 )

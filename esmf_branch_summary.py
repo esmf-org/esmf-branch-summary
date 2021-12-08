@@ -14,6 +14,8 @@ import argparse
 import pathlib
 import csv
 
+import esmf_git as git
+
 logger = logging.getLogger(__name__)
 logging.basicConfig()
 logger.setLevel(logging.DEBUG)
@@ -45,8 +47,11 @@ def get_args():
     return parser.parse_args()
 
 
-def checkout(branch_name, server):
-    return None
+# branch = server(hera, cheyenne), branch_name=branch(main, develop)
+def checkout(branch_name, server=None):
+    if server is None:
+        return git.checkout("main")
+    return git.checkout(f"origin/{server} {branch_name}/{server}")
 
 
 def find_files_containing_string(value, _root_path):
@@ -109,25 +114,6 @@ def get_test_results(file_path):
     return r
 
 
-fieldnames = [
-    "os",
-    "host",
-    "compiler",
-    "version",
-    "mpi_type",
-    "mpi_version",
-    "O_g",
-    "unit_pass",
-    "unit_fail",
-    "sys_pass",
-    "sys_fail",
-    "ex_pass",
-    "ex_fail",
-    "nuopc_pass",
-    "nuopc_fail",
-]
-
-
 def write_file(data):
     with open("eggs.csv", "w", newline="") as csvfile:
         writer = csv.DictWriter(csvfile, fieldnames=data[0].keys())
@@ -148,12 +134,14 @@ def main():
         "acorn",
     ]
     args = get_args()
-    logger.debug(args)
+    logger.debug("Args are : %s", args)
 
     os.chdir(args.repo_path)
     branch_name = args.name
 
     logger.info("HEY branchname is %s", branch_name)
+    
+    checkout("main")
 
     for server in server_list:
         logger.info("performing checkout")
