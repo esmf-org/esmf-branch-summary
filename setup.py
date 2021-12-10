@@ -24,7 +24,7 @@ required = [""]
 
 setup(
     name="esmf-branch-summary",
-    version="0.0.0",
+    version="0.0.1",
     description="CLI tool for generating summary data of testing ESMF framework",
     long_description=long_description,
     long_description_content_type="text/x-rst",
@@ -59,8 +59,8 @@ setup(
         "test": ["pytest", "pytest-cov", "pytest-forked", "pytest-xdist", "tox"],
     },
     entry_points={
-    'console_scripts': [
-        'esmf-branch-summary = esmf_branch_summary:main',
-    ],
-},
+        "console_scripts": [
+            "esmf-branch-summary = esmf_branch_summary:main",
+        ],
+    },
 )
