@@ -112,6 +112,7 @@ def get_last_branch_hash(branch_name, server):
     for entry in result.stdout.split("\n"):
         if branch_name in entry and server in entry:
             return entry.split(" ")[7]
+    return ""
 
 
 def get_test_results(file_path):
