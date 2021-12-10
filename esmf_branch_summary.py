@@ -22,6 +22,11 @@ logger.setLevel(logging.DEBUG)
 
 
 def get_args():
+    """get_args display CLI to user and gets options
+
+    Returns:
+        Namespace: object-
+    """
     parser = argparse.ArgumentParser(
         description="Git log parser for generating records"
     )
@@ -49,6 +54,13 @@ def get_args():
 
 # branch = server(hera, cheyenne), branch_name=branch(main, develop)
 def checkout(branch_name, server="", path=os.getcwd()):
+    """checkout a branch or branch/server combo
+
+    Args:
+        branch_name (str):
+        server (str, optional): Defaults to "".
+        path (str, optional): Defaults to os.getcwd().
+    """
     # logger.debug(branch_name, server, path)
     if server == "":
         logger.debug("running with server=''")
@@ -57,6 +69,17 @@ def checkout(branch_name, server="", path=os.getcwd()):
 
 
 def find_files_containing_string(value, _root_path):
+    """find_files_containing_string recursive searches through
+    all files in the _root_path returning a list of files
+    containing the string value
+
+    Args:
+        value (str): value to search for
+        _root_path (str): root path to search
+
+    Returns:
+        list: file_paths
+    """
     results = []
     for root, _, files in os.walk(_root_path, followlinks=True):
         for file in files:
@@ -68,6 +91,16 @@ def find_files_containing_string(value, _root_path):
 
 
 def get_last_branch_hash(branch_name, server):
+    """get_last_branch_hash return the hash of the last commit
+    to the branch/server
+
+    Args:
+        branch_name (str): develop, main, etc
+        server (str): cheyenne, hera
+
+    Returns:
+        str:
+    """
     result = subprocess.run(
         ["git", "log", "--format=%B", f"origin/{server}"],
         stdout=subprocess.PIPE,
@@ -82,24 +115,42 @@ def get_last_branch_hash(branch_name, server):
 
 
 def get_test_results(file_path):
-    r = {}
-    with open(file_path, "r", encoding="ANSI") as _file:
+    """get_test_results scrapes data from the file at
+    file_path and compiles a csv/table summarizing the
+    data.
 
+    Each return value is essentially a row in the csv, with
+    key/value pairs.
+
+    Args:
+        file_path (str): absolute or relative file path
+
+    Returns:
+        dict: fieldname/value
+    """
+    results = {}
+    with open(file_path, "r", encoding="ANSI") as _file:
         for line in _file:
             if "Build for" in line:
                 line_cleaned = line.split("=", 1)[1].strip()
                 group1, group2 = line_cleaned.split(",")
                 (
-                    r["compiler"],
-                    r["version"],
-                    r["mpi_type"],
-                    r["o_g"],
-                    r["branch"],
+                    results["compiler"],
+                    results["version"],
+                    results["mpi_type"],
+                    results["o_g"],
+                    results["branch"],
                 ) = group1.strip().split("_")
 
-                _, _, r["mpi_version"], _, r["host"], _, r["os"] = group2.strip().split(
-                    " "
-                )
+                (
+                    _,
+                    _,
+                    results["mpi_version"],
+                    _,
+                    results["host"],
+                    _,
+                    results["os"],
+                ) = group2.strip().split(" ")
             if "test results" in line:
                 key, value = line.split("\t", 1)
                 key_cleaned = key.split(" ", 1)[0]
@@ -118,21 +169,28 @@ def get_test_results(file_path):
                         .strip()
                         .split(" ")[1]
                     )
-                    r[f"{key_cleaned}_pass"] = pass_
-                    r[f"{key_cleaned}_fail"] = fail_
-                    r[f"{key_cleaned}_fail"] = fail_
+                    results[f"{key_cleaned}_pass"] = pass_
+                    results[f"{key_cleaned}_fail"] = fail_
+                    results[f"{key_cleaned}_fail"] = fail_
 
                 except ValueError as _:
                     pass_, fail_ = "fail", "fail"
-                    r[f"{key_cleaned}_pass"] = pass_
-                    r[f"{key_cleaned}_fail"] = fail_
+                    results[f"{key_cleaned}_pass"] = pass_
+                    results[f"{key_cleaned}_fail"] = fail_
                     logger.error(
                         "No %s test results in file %s", key_cleaned, file_path
                     )
-    return r
+    return results
 
 
 def write_file(data, file_path):
+    """write_file writes the data to file_path
+    as csv.
+
+    Args:
+        data (dict):
+        file_path (str):
+    """
     with open(file_path, "w", newline="", encoding="ANSI") as csvfile:
         writer = csv.DictWriter(csvfile, fieldnames=data[0].keys())
         writer.writeheader()
@@ -141,6 +199,7 @@ def write_file(data, file_path):
 
 
 def main():
+    """main point of execution"""
     server_list = [
         "cheyenne",
         "hera",
