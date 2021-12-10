@@ -46,7 +46,6 @@ def get_args():
         "-a",
         "--all",
         help="pulls from all servers",
-        action=argparse.BooleanOptionalAction,
         default=False,
     )
     return parser.parse_args()
