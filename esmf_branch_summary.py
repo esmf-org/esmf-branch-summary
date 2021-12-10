@@ -48,10 +48,12 @@ def get_args():
 
 
 # branch = server(hera, cheyenne), branch_name=branch(main, develop)
-def checkout(branch_name, server=None):
-    if server is None:
-        return git.checkout("main")
-    return git.checkout(f"origin/{server} {branch_name}/{server}")
+def checkout(branch_name, server="", path=os.getcwd()):
+    # logger.debug(branch_name, server, path)
+    if server == "":
+        logger.debug("running with server=''")
+        return git.checkout(branch_name, repopath=path)
+    return git.checkout(server, "origin", branch_name, repopath=path)
 
 
 def find_files_containing_string(value, _root_path):
@@ -81,7 +83,7 @@ def get_last_branch_hash(branch_name, server):
 
 def get_test_results(file_path):
     r = {}
-    with open(file_path, "r") as _file:
+    with open(file_path, "r", encoding="ANSI") as _file:
 
         for line in _file:
             if "Build for" in line:
@@ -104,18 +106,34 @@ def get_test_results(file_path):
 
                 try:
                     pass_, fail_ = value.split("\t", 1)
-                    pass_ = pass_.replace("\n", "").strip().split(" ")[1]
-                    fail_ = fail_.replace("\n", "").strip().split(" ")[1]
+                    pass_ = (
+                        pass_.replace("\n", "")
+                        .replace("-1", "queued")
+                        .strip()
+                        .split(" ")[1]
+                    )
+                    fail_ = (
+                        fail_.replace("\n", "")
+                        .replace("-1", "queued")
+                        .strip()
+                        .split(" ")[1]
+                    )
                     r[f"{key_cleaned}_pass"] = pass_
                     r[f"{key_cleaned}_fail"] = fail_
-                except ValueError as e:
-                    logger.error("No %s in file %s", key, file_path)
-                    continue
+                    r[f"{key_cleaned}_fail"] = fail_
+
+                except ValueError as _:
+                    pass_, fail_ = "fail", "fail"
+                    r[f"{key_cleaned}_pass"] = pass_
+                    r[f"{key_cleaned}_fail"] = fail_
+                    logger.error(
+                        "No %s test results in file %s", key_cleaned, file_path
+                    )
     return r
 
 
-def write_file(data):
-    with open("eggs.csv", "w", newline="") as csvfile:
+def write_file(data, file_path):
+    with open(file_path, "w", newline="", encoding="ANSI") as csvfile:
         writer = csv.DictWriter(csvfile, fieldnames=data[0].keys())
         writer.writeheader()
         for row in data:
@@ -133,19 +151,21 @@ def main():
         "chianti",
         "acorn",
     ]
+
+    cwd = os.getcwd()
+
     args = get_args()
     logger.debug("Args are : %s", args)
-
     os.chdir(args.repo_path)
     branch_name = args.name
-
     logger.info("HEY branchname is %s", branch_name)
-    
+
+    logger.info("checking out main")
     checkout("main")
 
     for server in server_list:
-        logger.info("performing checkout")
-        checkout(branch_name, server)
+        logger.info("checking out branch_name %s from server %s", branch_name, server)
+        checkout(branch_name, server, args.repo_path)
         _hash = get_last_branch_hash(branch_name, server)
         logger.info("last branch hash is %s", _hash)
         found_files = find_files_containing_string(_hash, os.path.abspath(branch_name))
@@ -156,7 +176,7 @@ def main():
             results.append(get_test_results(_file))
             if idx % 10 == 0:
                 logger.info("scanned %d", idx)
-        write_file(results)
+        write_file(results, os.path.join(cwd, "./eggs.csv"))
 
 
 if __name__ == "__main__":
