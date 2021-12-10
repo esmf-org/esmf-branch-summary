@@ -24,7 +24,7 @@ required = [""]
 
 setup(
     name="esmf-branch-summary",
-    version="0.0.3",
+    version="0.0.4",
     description="CLI tool for generating summary data of testing ESMF framework",
     long_description=long_description,
     long_description_content_type="text/x-rst",
