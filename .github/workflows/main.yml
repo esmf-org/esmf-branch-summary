@@ -1,0 +1,32 @@
+# This workflow will upload a Python Package using Twine when a release is created
+# For more information see: https://help.github.com/en/actions/language-and-framework-guides/using-python-with-github-actions#publishing-to-package-registries
+
+# This workflow uses actions that are not certified by GitHub.
+# They are provided by a third-party and are governed by
+# separate terms of service, privacy policy, and support
+# documentation.
+
+name: Run Weekly Summary
+
+on: [push]
+
+jobs:
+  deploy:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Git checkout
+      uses: actions/checkout@v2
+    - name: Run summary
+      run: |
+        git config user.name "GitHub Actions Bot"
+        git config user.email "<>"
+        git log --since="one week ago" --pretty=oneline > summary.txt
+    - name: Download a Build Artifact
+      uses: actions/upload-artifact@v2
+      with:
+        name: summary
+        path: summary.txt
+        
+    
