@@ -1,0 +1,221 @@
+
+===================================================================
+Build for = intel_18.0.5_intelmpi_g_develop, mpi version 2018.4.274 on cheyenne esmf_os: Linux
+Build time = 2021-12-10 06:20:04.546654
+git hash = ESMF_8_3_0_beta_snapshot_04-8-g60a38ef
+
+unit test results   	PASS 8926	FAIL 0
+system test results 	PASS 49 	FAIL 0
+example test results 	PASS 80 	FAIL 0
+nuopc test results 	PASS 50 	FAIL 0
+
+
+===================================================================
+
+
+Currently Loaded Modules:
+  1) ncarenv/1.3    3) ncarcompilers/0.5.0   5) netcdf/4.6.3
+  2) intel/18.0.5   4) impi/2018.4.274
+
+ 
+
+ 
+--------------------------------------------------------------
+ESMF_VERSION_STRING:    8.3.0 beta snapshot
+ESMF_8_3_0_beta_snapshot_04-8-g60a38ef462
+--------------------------------------------------------------
+On branch develop
+Your branch is up-to-date with 'origin/develop'.
+Untracked files:
+  (use "git add <file>..." to include in what will be committed)
+
+	build-intel_18.0.5_intelmpi_g.bat
+	build-intel_18.0.5_intelmpi_g.bat.e1881638
+	build-intel_18.0.5_intelmpi_g.bat.o1881638
+	getres-build.sh
+	getres-test.sh
+	nuopc-app-prototypes/
+	runpython.sh
+	test-intel_18.0.5_intelmpi_g.bat
+
+nothing added to commit but untracked files present (use "git add" to track)
+--------------------------------------------------------------
+ 
+--------------------------------------------------------------
+Make version:
+GNU Make 4.0
+Built for x86_64-unknown-linux-gnu
+Copyright (C) 1988-2013 Free Software Foundation, Inc.
+License GPLv3+: GNU GPL version 3 or later <http://gnu.org/licenses/gpl.html>
+This is free software: you are free to change and redistribute it.
+There is NO WARRANTY, to the extent permitted by law.
+
+--------------------------------------------------------------
+Fortran Compiler version:
+mpiifort for the Intel(R) MPI Library 2018 Update 4 for Linux*
+Copyright(C) 2003-2018, Intel Corporation.  All rights reserved.
+Intel(R) Fortran Intel(R) 64 Compiler for applications running on Intel(R) 64, Version 18.0.5.274 Build 20180823
+Copyright (C) 1985-2018 Intel Corporation.  All rights reserved.
+ifort: warning #10315: specifying -lm before files may supersede the Intel(R) math library and affect performance
+
+ifort version 18.0.5
+
+--------------------------------------------------------------
+C++ Compiler version:
+mpiicpc for the Intel(R) MPI Library 2018 Update 4 for Linux*
+Copyright(C) 2003-2018, Intel Corporation.  All rights reserved.
+Intel(R) C++ Intel(R) 64 Compiler for applications running on Intel(R) 64, Version 18.0.5.274 Build 20180823
+Copyright (C) 1985-2018 Intel Corporation.  All rights reserved.
+icpc: warning #10315: specifying -lm before files may supersede the Intel(R) math library and affect performance
+
+icpc version 18.0.5 (gcc version 4.8.0 compatibility)
+
+--------------------------------------------------------------
+Preprocessor version:
+gcc (SUSE Linux) 4.8.5
+Copyright (C) 2015 Free Software Foundation, Inc.
+This is free software; see the source for copying conditions.  There is NO
+warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+
+--------------------------------------------------------------
+NetCDF library version: netCDF 4.6.3
+NetCDF Fortran version: netCDF-Fortran 4.4.4
+ 
+--------------------------------------------------------------
+ * User set ESMF environment variables *
+ESMF_BOPT=g
+ESMF_COMM=intelmpi
+ESMF_COMPILER=intel
+ESMF_DIR=/glade/scratch/rlong/esmf-testing/intel_18.0.5_intelmpi_g_develop
+ESMF_NETCDF=nc-config
+ESMF_TESTEXHAUSTIVE=ON
+ESMF_TESTWITHTHREADS=ON
+ 
+--------------------------------------------------------------
+ * ESMF environment variables *
+ESMF_DIR: /glade/scratch/rlong/esmf-testing/intel_18.0.5_intelmpi_g_develop
+ESMF_OS:                Linux
+ESMF_MACHINE:           x86_64
+ESMF_ABI:               64
+ESMF_COMPILER:          intel
+ESMF_BOPT:              g
+ESMF_COMM:              intelmpi
+ESMF_SITE:              default
+ESMF_PTHREADS:          ON
+ESMF_OPENMP:            ON
+ESMF_OPENACC:           OFF
+ESMF_CXXSTD:            11
+ESMF_ARRAY_LITE:        FALSE
+ESMF_NO_INTEGER_1_BYTE: TRUE
+ESMF_NO_INTEGER_2_BYTE: TRUE
+ESMF_FORTRANSYMBOLS:    default
+ESMF_MAPPER_BUILD:      OFF
+ESMF_AUTO_LIB_BUILD:    ON
+ESMF_DEFER_LIB_BUILD:   ON
+ESMF_SHARED_LIB_BUILD:  ON
+ESMF_TRACE_LIB_BUILD:   ON
+ESMF_TESTEXHAUSTIVE:    ON
+ESMF_TESTCOMPTUNNEL:    ON
+ESMF_TESTWITHTHREADS:   ON
+ESMF_TESTMPMD:          OFF
+ESMF_TESTSHAREDOBJ:     OFF
+ESMF_TESTFORCEOPENMP:   OFF
+ESMF_TESTFORCEOPENACC:  OFF
+ESMF_TESTHARNESS_ARRAY: default
+ESMF_TESTHARNESS_FIELD: default
+ESMF_MPIRUN:            mpirun 
+ 
+--------------------------------------------------------------
+ * ESMF environment variables pointing to 3rd party software *
+ESMF_MOAB:               internal
+ESMF_LAPACK:             internal
+ESMF_ACC_SOFTWARE_STACK: none
+ESMF_NETCDF:             nc-config
+ESMF_NETCDF_INCLUDE:     /glade/u/apps/ch/opt/netcdf/4.6.3/intel/18.0.5/include
+ESMF_NETCDF_LIBS:        -lnetcdf
+ESMF_NETCDF_LIBPATH:     /glade/u/apps/ch/opt/netcdf/4.6.3/intel/18.0.5/lib
+ESMF_NFCONFIG:           nf-config
+ESMF_NETCDFF_INCLUDE:    /glade/u/apps/ch/opt/netcdf/4.6.3/intel/18.0.5/include
+ESMF_NETCDFF_LIBS:       -lnetcdff -lnetcdf -lnetcdf
+ESMF_NETCDFF_LIBPATH:    /glade/u/apps/ch/opt/netcdf/4.6.3/intel/18.0.5/lib /glade/u/apps/ch/opt/netcdf/4.6.3/intel/18.0.5//lib
+ESMF_PIO:                internal
+ESMF_YAMLCPP:            internal
+ 
+--------------------------------------------------------------
+ * ESMF environment variables for final installation *
+ESMF_INSTALL_PREFIX:    ./DEFAULTINSTALLDIR
+ESMF_INSTALL_HEADERDIR: include
+ESMF_INSTALL_MODDIR:    mod/modg/Linux.intel.64.intelmpi.default
+ESMF_INSTALL_LIBDIR:    lib/libg/Linux.intel.64.intelmpi.default
+ESMF_INSTALL_BINDIR:    bin/bing/Linux.intel.64.intelmpi.default
+ESMF_INSTALL_DOCDIR:    doc
+ 
+--------------------------------------------------------------
+ * ESMF Benchmark directory and parameters *
+ESMF_BENCHMARK_PREFIX:         ./DEFAULTBENCHMARKDIR
+ESMF_BENCHMARK_TOLERANCE:      20%
+ESMF_BENCHMARK_THRESHOLD_MSEC: 500
+ 
+--------------------------------------------------------------
+ * Other relevant environment variables *
+PATH:    /glade/u/apps/ch/opt/netcdf/4.6.3/intel/18.0.5/bin:/glade/u/apps/ch/opt/ncarcompilers/0.5.0/intel/18.0.5/mpi:/glade/u/apps/opt/intel/2018u4/impi/2018.4.274/intel64/bin:/glade/u/apps/ch/opt/ncarcompilers/0.5.0/intel/18.0.5:/glade/u/apps/opt/intel/2018u4/vtune_amplifier/bin64:/glade/u/apps/opt/intel/2018u4/inspector/bin64:/glade/u/apps/opt/intel/2018u4/advisor/bin64:/glade/u/apps/opt/intel/2018u4/compilers_and_libraries/linux/bin/intel64:/ncar/opt/slurm/latest/bin:/glade/u/apps/ch/opt/ncarcompilers/0.5.0/intel/19.0.5/mpi:/glade/u/apps/opt/vncmgr:/glade/u/apps/opt/globus-utils:/glade/u/apps/ch/opt/usr/bin:/glade/u/apps/ch/opt/lmod/8.1.7/bin:/usr/local/bin:/usr/bin:/bin:/usr/games:/opt/ibutils/bin:/glade/u/apps/opt/hpss/hpss-client.5.0.2.p5/bin:/glade/u/apps/ch/os/usr/bin:/glade/u/apps/ch/opt/hpe-cpe/1.4.1/bin:/glade/u/apps/ch/opt/hpe-cpe/21.09/bin:/opt/pbs/bin:/sbin
+LD_LIBRARY_PATH: /glade/u/apps/opt/intel/2018u4/impi/2018.4.274/intel64/lib:/glade/u/apps/opt/intel/2018u4/compilers_and_libraries/linux/lib/intel64:/ncar/opt/slurm/latest/lib:/glade/u/apps/ch/os/usr/lib64:/glade/u/apps/ch/os/usr/lib:/glade/u/apps/ch/os/lib64:/glade/u/apps/ch/os/lib
+ 
+--------------------------------------------------------------
+ * Compilers, Linkers, Flags, and Libraries *
+Location of the preprocessor:      /glade/u/apps/ch/opt/ncarcompilers/0.5.0/intel/18.0.5/gcc
+Location of the Fortran compiler:  /glade/u/apps/ch/opt/ncarcompilers/0.5.0/intel/18.0.5/mpi/mpiifort
+Location of the Fortran linker:    /glade/u/apps/ch/opt/ncarcompilers/0.5.0/intel/18.0.5/mpi/mpiifort
+Location of the C++ compiler:      /glade/u/apps/opt/intel/2018u4/impi/2018.4.274/intel64/bin/mpiicpc
+Location of the C++ linker:        /glade/u/apps/opt/intel/2018u4/impi/2018.4.274/intel64/bin/mpiicpc
+
+Fortran compiler flags:
+ESMF_F90COMPILER: mpiifort
+ESMF_F90COMPILEOPTS: -g -traceback -check arg_temp_created,bounds,format,output_conversion,stack,uninit -fPIC -assume realloc_lhs -m64 -mcmodel=small -pthread -threads  -qopenmp
+ESMF_F90COMPILEPATHS: -I/glade/scratch/rlong/esmf-testing/intel_18.0.5_intelmpi_g_develop/mod/modg/Linux.intel.64.intelmpi.default -I/glade/scratch/rlong/esmf-testing/intel_18.0.5_intelmpi_g_develop/src/include -I/glade/u/apps/ch/opt/netcdf/4.6.3/intel/18.0.5/include -I/glade/u/apps/ch/opt/netcdf/4.6.3/intel/18.0.5/include
+ESMF_F90COMPILECPPFLAGS: -DESMF_NO_INTEGER_1_BYTE -DESMF_NO_INTEGER_2_BYTE -DESMF_VERSION_STRING_GIT='ESMF_8_3_0_beta_snapshot_04-8-g60a38ef462' -DESMF_MOAB=1 -DESMF_LAPACK=1 -DESMF_LAPACK_INTERNAL=1 -DESMF_NO_ACC_SOFTWARE_STACK=1 -DESMF_NETCDF=1 -DESMF_YAMLCPP=1 -DESMF_YAML=1 -DESMF_PIO=1 -DESMF_MPIIO -DESMF_NO_OPENACC -DESMF_TESTEXHAUSTIVE -DESMF_BOPT_g -DESMF_TESTCOMPTUNNEL -DESMF_TESTWITHTHREADS -DSx86_64_small=1 -DESMF_OS_Linux=1 -DESMF_COMM=intelmpi -DESMF_DIR=/glade/scratch/rlong/esmf-testing/intel_18.0.5_intelmpi_g_develop
+ESMF_F90COMPILEFREECPP: 
+ESMF_F90COMPILEFREENOCPP: 
+ESMF_F90COMPILEFIXCPP: 
+ESMF_F90COMPILEFIXNOCPP: 
+
+Fortran linker flags:
+ESMF_F90LINKOPTS:   -m64 -mcmodel=small -pthread -threads -Wl,--no-as-needed  -qopenmp
+ESMF_F90LINKPATHS: -L/glade/scratch/rlong/esmf-testing/intel_18.0.5_intelmpi_g_develop/lib/libg/Linux.intel.64.intelmpi.default -L/glade/u/apps/ch/opt/netcdf/4.6.3/intel/18.0.5/lib -L/glade/u/apps/ch/opt/netcdf/4.6.3/intel/18.0.5/lib -L/glade/u/apps/ch/opt/netcdf/4.6.3/intel/18.0.5//lib 
+ESMF_F90LINKRPATHS: -Wl,-rpath,/glade/scratch/rlong/esmf-testing/intel_18.0.5_intelmpi_g_develop/lib/libg/Linux.intel.64.intelmpi.default -Wl,-rpath,/glade/u/apps/ch/opt/netcdf/4.6.3/intel/18.0.5/lib -Wl,-rpath,/glade/u/apps/ch/opt/netcdf/4.6.3/intel/18.0.5/lib -Wl,-rpath,/glade/u/apps/ch/opt/netcdf/4.6.3/intel/18.0.5//lib
+ESMF_F90LINKLIBS:  -cxxlib -lrt -ldl -lnetcdf -lnetcdff -lnetcdf -lnetcdf
+ESMF_F90ESMFLINKLIBS: -lesmf  -cxxlib -lrt -ldl -lnetcdf -lnetcdff -lnetcdf -lnetcdf
+
+C++ compiler flags:
+ESMF_CXXCOMPILER: mpiicpc
+ESMF_CXXCOMPILEOPTS: -std=c++11 -g -traceback -Wcheck -fPIC -m64 -mcmodel=small -pthread  -qopenmp
+ESMF_CXXCOMPILEPATHS:  -I/glade/scratch/rlong/esmf-testing/intel_18.0.5_intelmpi_g_develop/src/include  -I/glade/u/apps/ch/opt/netcdf/4.6.3/intel/18.0.5/include -I/glade/scratch/rlong/esmf-testing/intel_18.0.5_intelmpi_g_develop/src/prologue/yaml-cpp/include
+ESMF_CXXCOMPILECPPFLAGS: -DESMF_NO_INTEGER_1_BYTE -DESMF_NO_INTEGER_2_BYTE -DESMF_VERSION_STRING_GIT='ESMF_8_3_0_beta_snapshot_04-8-g60a38ef462' -DESMF_MOAB=1 -DESMF_LAPACK=1 -DESMF_LAPACK_INTERNAL=1 -DESMF_NO_ACC_SOFTWARE_STACK=1 -DESMF_NETCDF=1 -DESMF_YAMLCPP=1 -DESMF_YAML=1 -DESMF_PIO=1 -DESMF_MPIIO -DESMF_NO_OPENACC -DESMF_TESTEXHAUSTIVE -DESMF_BOPT_g -DESMF_TESTCOMPTUNNEL -DESMF_TESTWITHTHREADS -DSx86_64_small=1 -DESMF_OS_Linux=1 -DESMF_COMM=intelmpi -DESMF_DIR=/glade/scratch/rlong/esmf-testing/intel_18.0.5_intelmpi_g_develop -D__SDIR__='' -DESMF_CXXSTD=11
+
+C++ linker flags:
+ESMF_CXXLINKOPTS:   -m64 -mcmodel=small -pthread -Wl,--no-as-needed  -qopenmp
+ESMF_CXXLINKPATHS: -L/glade/scratch/rlong/esmf-testing/intel_18.0.5_intelmpi_g_develop/lib/libg/Linux.intel.64.intelmpi.default -L/glade/u/apps/ch/opt/netcdf/4.6.3/intel/18.0.5/lib -L/glade/u/apps/ch/opt/netcdf/4.6.3/intel/18.0.5/lib -L/glade/u/apps/ch/opt/netcdf/4.6.3/intel/18.0.5//lib -L/glade/u/apps/opt/intel/2018u4/compilers_and_libraries_2018.5.274/linux/compiler/lib/intel64_lin/
+ESMF_CXXLINKRPATHS: -Wl,-rpath,/glade/scratch/rlong/esmf-testing/intel_18.0.5_intelmpi_g_develop/lib/libg/Linux.intel.64.intelmpi.default -Wl,-rpath,/glade/u/apps/ch/opt/netcdf/4.6.3/intel/18.0.5/lib -Wl,-rpath,/glade/u/apps/ch/opt/netcdf/4.6.3/intel/18.0.5/lib -Wl,-rpath,/glade/u/apps/ch/opt/netcdf/4.6.3/intel/18.0.5//lib -Wl,-rpath,/glade/u/apps/opt/intel/2018u4/compilers_and_libraries_2018.5.274/linux/compiler/lib/intel64_lin/
+ESMF_CXXLINKLIBS:  -lsz -lz -limf -lm -ldl -ldl -lrt -lpthread -lifport -lifcoremt -limf -lsvml -lm -lipgo -liomp5 -lintlc -lpthread -lsvml -ldl -lgcc -lgcc_s -lirc_s -ldl -lrt -ldl -lnetcdf -lnetcdff -lnetcdf -lnetcdf
+ESMF_CXXESMFLINKLIBS: -lesmf  -lsz -lz -limf -lm -ldl -ldl -lrt -lpthread -lifport -lifcoremt -limf -lsvml -lm -lipgo -liomp5 -lintlc -lpthread -lsvml -ldl -lgcc -lgcc_s -lirc_s -ldl -lrt -ldl -lnetcdf -lnetcdff -lnetcdf -lnetcdf
+
+Shared library build:
+ESMF_SL_LIBS_TO_MAKE: libesmf
+ESMF_SL_SUFFIX:       so
+ESMF_SL_LIBLINKER:    mpiicpc
+ESMF_SL_LIBOPTS:       -pthread -shared  -qopenmp
+ESMF_SL_LIBLIBS:      
+
+ESMF Tracing linker options:
+ESMF_TRACE_LDPRELOAD=/glade/scratch/rlong/esmf-testing/intel_18.0.5_intelmpi_g_develop/lib/libg/Linux.intel.64.intelmpi.default/libesmftrace_preload.so
+ESMF_TRACE_STATICLINKOPTS=-static -Wl,--wrap=c_esmftrace_notify_wrappers -Wl,--wrap=c_esmftrace_isinitialized -Wl,--wrap=write -Wl,--wrap=writev -Wl,--wrap=pwrite -Wl,--wrap=read -Wl,--wrap=open -Wl,--wrap=MPI_Allgather -Wl,--wrap=MPI_Allgatherv -Wl,--wrap=MPI_Allreduce -Wl,--wrap=MPI_Alltoall -Wl,--wrap=MPI_Alltoallv -Wl,--wrap=MPI_Alltoallw -Wl,--wrap=MPI_Barrier -Wl,--wrap=MPI_Bcast -Wl,--wrap=MPI_Bsend -Wl,--wrap=MPI_Gather -Wl,--wrap=MPI_Gatherv -Wl,--wrap=MPI_Iprobe -Wl,--wrap=MPI_Irecv -Wl,--wrap=MPI_Irsend -Wl,--wrap=MPI_Isend -Wl,--wrap=MPI_Issend -Wl,--wrap=MPI_Probe -Wl,--wrap=MPI_Recv -Wl,--wrap=MPI_Reduce -Wl,--wrap=MPI_Rsend -Wl,--wrap=MPI_Scan -Wl,--wrap=MPI_Scatter -Wl,--wrap=MPI_Scatterv -Wl,--wrap=MPI_Send -Wl,--wrap=MPI_Sendrecv -Wl,--wrap=MPI_Test -Wl,--wrap=MPI_Testall -Wl,--wrap=MPI_Testany -Wl,--wrap=MPI_Testsome -Wl,--wrap=MPI_Wait -Wl,--wrap=MPI_Waitall -Wl,--wrap=MPI_Waitany -Wl,--wrap=MPI_Waitsome -Wl,--wrap=mpi_allgather_ -Wl,--wrap=mpi_allgather__ -Wl,--wrap=mpi_allgatherv_ -Wl,--wrap=mpi_allgatherv__ -Wl,--wrap=mpi_allreduce_ -Wl,--wrap=mpi_allreduce__ -Wl,--wrap=mpi_alltoall_ -Wl,--wrap=mpi_alltoall__ -Wl,--wrap=mpi_alltoallv_ -Wl,--wrap=mpi_alltoallv__ -Wl,--wrap=mpi_alltoallw_ -Wl,--wrap=mpi_alltoallw__ -Wl,--wrap=mpi_barrier_ -Wl,--wrap=mpi_barrier__ -Wl,--wrap=mpi_bcast_ -Wl,--wrap=mpi_bcast__ -Wl,--wrap=mpi_bsend_ -Wl,--wrap=mpi_bsend__ -Wl,--wrap=mpi_exscan_ -Wl,--wrap=mpi_exscan__ -Wl,--wrap=mpi_gather_ -Wl,--wrap=mpi_gather__ -Wl,--wrap=mpi_gatherv_ -Wl,--wrap=mpi_gatherv__ -Wl,--wrap=mpi_iprobe_ -Wl,--wrap=mpi_iprobe__ -Wl,--wrap=mpi_irecv_ -Wl,--wrap=mpi_irecv__ -Wl,--wrap=mpi_irsend_ -Wl,--wrap=mpi_irsend__ -Wl,--wrap=mpi_isend_ -Wl,--wrap=mpi_isend__ -Wl,--wrap=mpi_issend_ -Wl,--wrap=mpi_issend__ -Wl,--wrap=mpi_probe_ -Wl,--wrap=mpi_probe__ -Wl,--wrap=mpi_recv_ -Wl,--wrap=mpi_recv__ -Wl,--wrap=mpi_reduce_ -Wl,--wrap=mpi_reduce__ -Wl,--wrap=mpi_reduce_scatter_ -Wl,--wrap=mpi_reduce_scatter__ -Wl,--wrap=mpi_rsend_ -Wl,--wrap=mpi_rsend__ -Wl,--wrap=mpi_scatter_ -Wl,--wrap=mpi_scatter__ -Wl,--wrap=mpi_scatterv_ -Wl,--wrap=mpi_scatterv__ -Wl,--wrap=mpi_scan_ -Wl,--wrap=mpi_scan__ -Wl,--wrap=mpi_send_ -Wl,--wrap=mpi_send__ -Wl,--wrap=mpi_sendrecv_ -Wl,--wrap=mpi_sendrecv__ -Wl,--wrap=mpi_test_ -Wl,--wrap=mpi_test__ -Wl,--wrap=mpi_testall_ -Wl,--wrap=mpi_testall__ -Wl,--wrap=mpi_testany_ -Wl,--wrap=mpi_testany__ -Wl,--wrap=mpi_testsome_ -Wl,--wrap=mpi_testsome__ -Wl,--wrap=mpi_wait_ -Wl,--wrap=mpi_wait__ -Wl,--wrap=mpi_waitall_ -Wl,--wrap=mpi_waitall__ -Wl,--wrap=mpi_waitany_ -Wl,--wrap=mpi_waitany__
+ESMF_TRACE_STATICLINKLIBS=-lesmftrace_static
+
+
+--------------------------------------------------------------
+Compiling on Fri Dec 10 06:20:15 MST 2021 on r8i6n12
+Machine characteristics: Linux r8i6n12 4.12.14-95.51-default #1 SMP Fri Apr 17 08:14:12 UTC 2020 (c6bab98) x86_64 x86_64 x86_64 GNU/Linux
+==============================================================
+
+
+===================================================================
