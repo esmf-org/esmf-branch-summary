@@ -83,7 +83,7 @@ def find_files_containing_string(value, _root_path):
     for root, _, files in os.walk(_root_path, followlinks=True):
         for file in files:
             if "summary.dat" in file:
-                with open(os.path.join(root, file), encoding="ANSI") as _file:
+                with open(os.path.join(root, file)) as _file:
                     if value in _file.read():
                         results.append(os.path.join(root, file))
     return results
@@ -129,7 +129,7 @@ def get_test_results(file_path):
         dict: fieldname/value
     """
     results = {}
-    with open(file_path, "r", encoding="ANSI") as _file:
+    with open(file_path, "r") as _file:
         for line in _file:
             if "Build for" in line:
                 line_cleaned = line.split("=", 1)[1].strip()
@@ -191,7 +191,7 @@ def write_file(data, file_path):
         data (dict):
         file_path (str):
     """
-    with open(file_path, "w", newline="", encoding="ANSI") as csvfile:
+    with open(file_path, "w", newline="") as csvfile:
         writer = csv.DictWriter(csvfile, fieldnames=data[0].keys())
         writer.writeheader()
         for row in data:
