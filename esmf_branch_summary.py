@@ -62,7 +62,7 @@ def checkout(branch_name, server="", path=os.getcwd()):
     """
     # logger.debug(branch_name, server, path)
     if server == "":
-        logger.debug("running with server=''")
+        logger.debug("running with server %s", server)
         return git.checkout(branch_name, repopath=path)
     return git.checkout(server, "origin", branch_name, repopath=path)
 
