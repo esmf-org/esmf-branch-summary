@@ -6,3 +6,6 @@ build/
 dist/
 venv/
 eggs.csv
+.pytest_cache
+.tox
+.coverage
