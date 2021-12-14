@@ -67,24 +67,29 @@ def checkout(branch_name, server="", path=os.getcwd()):
     return git.checkout(server, "origin", branch_name, repopath=path)
 
 
-def find_files_containing_string(value, _root_path):
-    """find_files_containing_string recursive searches through
-    all files in the _root_path returning a list of files
-    containing the string value
+def any_string_in_string(needles, haystack):
+    return any(needle in haystack for needle in needles)
 
-    Args:
-        value (str): value to search for
-        _root_path (str): root path to search
 
-    Returns:
-        list: file_paths
-    """
+def find_files(
+    _root_path,
+    value_search_strings=[],
+    file_name_search_strings=[],
+    file_name_ignore_strings=[],
+):
+
     results = []
     for root, _, files in os.walk(_root_path, followlinks=True):
         for file in files:
-            if "summary.dat" in file:
-                with open(os.path.join(root, file)) as _file:
-                    if value in _file.read():
+            has_filename_search_string = any_string_in_string(
+                file_name_search_strings, file
+            )
+            not_has_filename_ignore_string = not any_string_in_string(
+                file_name_ignore_strings, file
+            )
+            if has_filename_search_string and not_has_filename_ignore_string:
+                with open(os.path.join(root, file), "r", errors="ignore") as _file:
+                    if any_string_in_string(value_search_strings, _file.read()):
                         results.append(os.path.join(root, file))
     return results
 
@@ -114,6 +119,16 @@ def get_last_branch_hash(branch_name, server):
     return ""
 
 
+def is_build_passing(file_path):
+    with open(file_path, "r") as _file:
+        for idx, line in enumerate(reversed(list(_file))):
+            if "ESMF library built successfully" in line:
+                return True
+            if idx > 20:
+                break
+        return False
+
+
 def get_test_results(file_path):
     """get_test_results scrapes data from the file at
     file_path and compiles a csv/table summarizing the
@@ -135,8 +150,8 @@ def get_test_results(file_path):
                 line_cleaned = line.split("=", 1)[1].strip()
                 group1, group2 = line_cleaned.split(",")
                 (
-                    results["compiler"],
-                    results["version"],
+                    results["compiler_type"],
+                    results["compiler_version"],
                     results["mpi_type"],
                     results["o_g"],
                     results["branch"],
@@ -198,6 +213,30 @@ def write_file(data, file_path):
             writer.writerow(row)
 
 
+def norm(_path):
+    result = os.path.normpath(_path).split(os.sep)
+    return {
+        "compiler_type": result[-7],
+        "compiler_version": result[-6],
+        "mpi_type": result[-4],
+        "mpi_version": result[-3],
+    }
+
+
+def fetch_build_result(needle, haystack):
+    try:
+        result = filter(
+            lambda x: x["compiler_type"] == needle["compiler_type"]
+            and x["compiler_version"] == needle["compiler_version"]
+            and x["mpi_type"] == needle["mpi_type"]
+            and x["mpi_version"] == needle["mpi_version"],
+            haystack,
+        )
+        return list(result)[0]["build_passed"]
+    except IndexError:
+        return False
+
+
 def main():
     """main point of execution"""
     server_list = [
@@ -226,13 +265,31 @@ def main():
         logger.info("checking out branch_name %s from server %s", branch_name, server)
         checkout(branch_name, server, args.repo_path)
         _hash = get_last_branch_hash(branch_name, server)
-        logger.info("last branch hash is %s", _hash)
-        found_files = find_files_containing_string(_hash, os.path.abspath(branch_name))
-        logger.info("searching %d files", len(found_files))
+        logger.debug("last branch hash is %s", _hash)
+        matching_logs = find_files(
+            os.path.abspath(branch_name), [_hash], ["build.log"], ["module", "python"]
+        )
+        logger.debug("parsing %s logs", len(matching_logs))
+
+        matching_summaries = set(
+            find_files(os.path.abspath(branch_name), [_hash], ["summary.dat"])
+        )
+
+        build_passing_results = []
+        for idx, _file in enumerate(matching_logs):
+            build_passing_results.append(
+                dict(**norm(_file), **{"build_passed": is_build_passing(_file)})
+            )
+
+        logger.info("parsing %d summaries", len(matching_summaries))
 
         results = []
-        for idx, _file in enumerate(found_files):
-            results.append(get_test_results(_file))
+        for idx, _file in enumerate(matching_summaries):
+
+            result = get_test_results(_file)
+            pass_fail = fetch_build_result(result, build_passing_results)
+
+            results.append({**result, "build_passed": pass_fail})
             if idx % 10 == 0:
                 logger.info("scanned %d", idx)
         write_file(results, os.path.join(cwd, "./eggs.csv"))
