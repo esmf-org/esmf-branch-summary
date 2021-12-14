@@ -15,9 +15,10 @@ def test():
 def testFindFilesContainingString_whenCalledWithFoundValue_ReturnsCorrectFiles():
     expected = 2
     actual = len(
-        ebs.find_files_containing_string(
+        ebs.find_files(
             "ESMF_8_3_0_beta_snapshot_04-8-g60a38ef",
             ".\\tests\\fixtures\\summary_data_files",
+            "summary.dat",
         )
     )
     assert actual == expected
@@ -26,9 +27,10 @@ def testFindFilesContainingString_whenCalledWithFoundValue_ReturnsCorrectFiles()
 def testFindFilesContainingString_whenCalledWithNotFoundValue_ReturnsCorrectFiles():
     expected = 0
     actual = len(
-        ebs.find_files_containing_string(
+        ebs.find_files(
             "non_existant_hash_123",
             ".\\tests\\fixtures\\summary_data_files",
+            "summary.dat",
         )
     )
     assert actual == expected
