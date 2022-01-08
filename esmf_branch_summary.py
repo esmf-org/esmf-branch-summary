@@ -13,12 +13,9 @@ import logging
 import argparse
 import pathlib
 import csv
+from typing import List
 
 import esmf_git as git
-
-logger = logging.getLogger(__name__)
-logging.basicConfig()
-logger.setLevel(logging.DEBUG)
 
 
 def get_args():
@@ -77,17 +74,31 @@ def find_files(
     file_name_search_strings=[],
     file_name_ignore_strings=[],
 ):
-
+    logging.debug(
+        "find_file(%s, %s, %s, %s)",
+        _root_path,
+        value_search_strings,
+        file_name_search_strings,
+        file_name_ignore_strings,
+    )
     results = []
+    if not isinstance(value_search_strings, List):
+        value_search_strings = value_search_strings.split()
     for root, _, files in os.walk(_root_path, followlinks=True):
         for file in files:
+            file = os.path.join(root, file)
             has_filename_search_string = any_string_in_string(
                 file_name_search_strings, file
             )
             not_has_filename_ignore_string = not any_string_in_string(
                 file_name_ignore_strings, file
             )
-            if has_filename_search_string and not_has_filename_ignore_string:
+            has_file_name_search = len(file_name_search_strings) + len(
+                file_name_ignore_strings
+            )
+            if not has_file_name_search or (
+                has_filename_search_string and not_has_filename_ignore_string
+            ):
                 with open(os.path.join(root, file), "r", errors="ignore") as _file:
                     if any_string_in_string(value_search_strings, _file.read()):
                         results.append(os.path.join(root, file))
@@ -296,4 +307,7 @@ def main():
 
 
 if __name__ == "__main__":
+    logger = logging.getLogger(__name__)
+    logging.basicConfig()
+    logger.setLevel(logging.DEBUG)
     main()
