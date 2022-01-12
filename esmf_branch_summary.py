@@ -40,9 +40,9 @@ def get_args():
     parser.add_argument(
         "-n",
         "--name",
-        help=("name of the branch to use. " "Example --name 'develop'"),
         default="develop",
-    ),
+        help=("name of the branch to use. " "Example --name 'develop'"),
+    )
     parser.add_argument(
         "-log",
         "--log",
@@ -331,8 +331,9 @@ def main():
         "acorn",
     ]
 
-    os.chdir(args.repo_path)
-    git.pull(args.repo_path)
+    repo_path = os.path.abspath(args.repo_path)
+    os.chdir(repo_path)
+    git.pull(repo_path)
     branch_name = args.name
     logging.debug("HEY branchname is %s", branch_name)
     logging.info("checking out main")
@@ -340,7 +341,7 @@ def main():
 
     for server in server_list:
         logging.info("checking out branch_name %s from server %s", branch_name, server)
-        checkout(branch_name, server, args.repo_path)
+        checkout(branch_name, server, repo_path)
         _hash = get_last_branch_hash(branch_name, server)
         logging.info("last branch hash is %s", _hash)
 
@@ -375,24 +376,24 @@ def main():
         logging.info("done parsing summaries")
 
         output_file_path = os.path.abspath(
-            os.path.join(args.repo_path, branch_name, f"{_hash}.md")
+            os.path.join(repo_path, branch_name, f"{_hash}.md")
         )
 
         logging.info("writing summary results to %s", output_file_path)
         write_file(test_results, output_file_path)
 
-        logging.info("git add %s, %s", output_file_path, args.repo_path)
-        git.add(output_file_path, args.repo_path)
+        logging.info("git add %s, %s", output_file_path, repo_path)
+        git.add(output_file_path, repo_path)
 
         logging.info(
-            "committing [%s/%s/%s] to %s", server, branch_name, _hash, args.repo_path
+            "committing [%s/%s/%s] to %s", server, branch_name, _hash, repo_path
         )
         git.commit(
-            generate_commit_message(server, branch_name, _hash), args.repo_path
+            generate_commit_message(server, branch_name, _hash), repo_path
         )  # Message update for test of intel_18.0.5_mpt_g_develop with hash ESMF_8_3_0_beta_snapshot_04-8-g60a38ef on cheyenne
-        logging.info("pushing summary to main from %s", args.repo_path)
+        logging.info("pushing summary to main from %s", repo_path)
         try:
-            git.push(branch="main", repopath=args.repo_path)
+            git.push(branch="main", repopath=repo_path)
         except subprocess.CalledProcessError as _:
             logging.error(
                 "git push failed.  Try updating the esmf-test-artifacts repo."
