@@ -332,6 +332,7 @@ def main():
     ]
 
     os.chdir(args.repo_path)
+    git.pull(args.repo_path)
     branch_name = args.name
     logging.debug("HEY branchname is %s", branch_name)
     logging.info("checking out main")
