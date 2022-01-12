@@ -293,8 +293,32 @@ def generate_commit_message(_server, branch_name, _hash):
     return f"updated summary for hash {_hash} on {branch_name}{_server}"
 
 
-def main(args):
+def main():
     """main point of execution"""
+    args = get_args()
+    levels = {
+        "critical": logging.CRITICAL,
+        "error": logging.ERROR,
+        "warn": logging.WARNING,
+        "warning": logging.WARNING,
+        "info": logging.INFO,
+        "debug": logging.DEBUG,
+    }
+    level = levels.get(args.log.lower())
+    if level is None:
+        raise ValueError(
+            f"log level given: {args.log}"
+            f" -- must be one of: {' | '.join(levels.keys())}"
+        )
+    if level is None:
+        raise ValueError(
+            f"log level given: {args.log}"
+            f" -- must be one of: {' | '.join(levels.keys())}"
+        )
+    LOG_FORMAT = "%(asctime)s_%(name)s_%(levelname)s: %(message)s"
+    logging.basicConfig(level=level, format=LOG_FORMAT)
+
+    logging.debug("Args are : %s", args)
 
     server_list = [
         "cheyenne",
@@ -307,7 +331,6 @@ def main(args):
         "acorn",
     ]
 
-    logging.debug("Args are : %s", args)
     os.chdir(args.repo_path)
     branch_name = args.name
     logging.debug("HEY branchname is %s", branch_name)
@@ -377,26 +400,4 @@ def main(args):
 
 
 if __name__ == "__main__":
-    args = get_args()
-    levels = {
-        "critical": logging.CRITICAL,
-        "error": logging.ERROR,
-        "warn": logging.WARNING,
-        "warning": logging.WARNING,
-        "info": logging.INFO,
-        "debug": logging.DEBUG,
-    }
-    level = levels.get(args.log.lower())
-    if level is None:
-        raise ValueError(
-            f"log level given: {args.log}"
-            f" -- must be one of: {' | '.join(levels.keys())}"
-        )
-    if level is None:
-        raise ValueError(
-            f"log level given: {args.log}"
-            f" -- must be one of: {' | '.join(levels.keys())}"
-        )
-    LOG_FORMAT = "%(asctime)s_%(name)s_%(levelname)s: %(message)s"
-    logging.basicConfig(level=level, format=LOG_FORMAT)
-    main(args)
+    main()
