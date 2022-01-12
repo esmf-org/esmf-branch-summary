@@ -1,8 +1,8 @@
-#!/glade/u/apps/ch/opt/python/3.7.9/gnu/9.1.0/bin/python3
 """
-Git commands module
+ESMF Branch Summary Tool
 
-Subprocess convenience module for interacting with Git
+Aggregates and summarizes ESMF test results and pushes them
+to a repository in a markdown formatted table.
 
 author: Ryan Long <ryan.long@noaa.gov>
 """
