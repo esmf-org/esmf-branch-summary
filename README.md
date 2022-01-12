@@ -12,7 +12,7 @@ Foobar is a Python library for dealing with word pluralization.
 Use the package manager [pip](https://pip.pypa.io/en/stable/) to install foobar.
 
 ```bash
-pip install esmf_branch_summary
+pip install esmf-branch-summary
 ```
 
 ## Usage
@@ -28,7 +28,7 @@ positional arguments:
 optional arguments:
   -h, --help            show this help message and exit
   -n NAME, --name NAME  name of the branch to use. Example --name 'develop'
-  -log LOG, --log LOG   Provide logging level. Example --log debug', default='warning'
+  -log LOG, --log LOG   Provide logging level. Example --log debug, default='warning'
 ```
 
 
