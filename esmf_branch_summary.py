@@ -28,7 +28,7 @@ def get_args():
         Namespace: object-
     """
     parser = argparse.ArgumentParser(
-        description="Git log parser for generating records"
+        description="esmf_branch_summary aggregates esmf framework test results from other branches into a summary file ."
     )
     parser.add_argument(
         "repo_path",
@@ -39,7 +39,7 @@ def get_args():
     parser.add_argument(
         "-n",
         "--name",
-        help=("name of the branch to use" "Example --name 'develop'"),
+        help=("name of the branch to use. " "Example --name 'develop'"),
         default="develop",
     ),
     parser.add_argument(
