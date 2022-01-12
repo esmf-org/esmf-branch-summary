@@ -8,18 +8,18 @@ author: Ryan Long <ryan.long@noaa.gov>
 """
 
 
-import os
-import subprocess
-import logging
 import argparse
-import pathlib
-from typing import List
-from collections import OrderedDict
+import bisect
 import inspect
-
-from tabulate import tabulate
+import logging
+import os
+import pathlib
+import subprocess
+from collections import OrderedDict
+from typing import List
 
 import esmf_git as git
+from tabulate import tabulate
 
 
 def get_args():
@@ -78,7 +78,6 @@ def find_files(
     file_name_search_strings=[],
     file_name_ignore_strings=[],
 ):
-    import bisect
 
     results = []
     if not isinstance(value_search_strings, List):
@@ -331,19 +330,18 @@ def main():
         "acorn",
     ]
 
-    repo_path = os.path.abspath(args.repo_path)
-    logging.info("repo_path ", repo_path)
-    os.chdir(repo_path)
+    repopath = os.path.abspath(args.repo_path)
+    os.chdir(repopath)
     logging.info(os.getcwd())
-    git.pull(repopath=repo_path)
+    git.pull(repopath=repopath)
     branch_name = args.name
     logging.debug("HEY branchname is %s", branch_name)
     logging.info("checking out main")
-    checkout("main", repopath=repo_path)
+    checkout("main", repopath=repopath)
 
     for server in server_list:
         logging.info("checking out branch_name %s from server %s", branch_name, server)
-        checkout(branch_name, server, repo_path)
+        checkout(branch_name, server, repopath)
         _hash = get_last_branch_hash(branch_name, server)
         logging.info("last branch hash is %s", _hash)
 
@@ -378,24 +376,22 @@ def main():
         logging.info("done parsing summaries")
 
         output_file_path = os.path.abspath(
-            os.path.join(repo_path, branch_name, f"{_hash}.md")
+            os.path.join(repopath, branch_name, f"{_hash}.md")
         )
 
         logging.info("writing summary results to %s", output_file_path)
         write_file(test_results, output_file_path)
 
-        logging.info("git add %s, %s", output_file_path, repo_path)
-        git.add(output_file_path, repo_path)
+        logging.info("git add %s, %s", output_file_path, repopath)
+        git.add(output_file_path, repopath)
 
         logging.info(
-            "committing [%s/%s/%s] to %s", server, branch_name, _hash, repo_path
+            "committing [%s/%s/%s] to %s", server, branch_name, _hash, repopath
         )
-        git.commit(
-            generate_commit_message(server, branch_name, _hash), repo_path
-        )  # Message update for test of intel_18.0.5_mpt_g_develop with hash ESMF_8_3_0_beta_snapshot_04-8-g60a38ef on cheyenne
-        logging.info("pushing summary to main from %s", repo_path)
+        git.commit(generate_commit_message(server, branch_name, _hash), repopath)
+        logging.info("pushing summary to main from %s", repopath)
         try:
-            git.push(branch="main", repopath=repo_path)
+            git.push(branch="main", repopath=repopath)
         except subprocess.CalledProcessError as _:
             logging.error(
                 "git push failed.  Try updating the esmf-test-artifacts repo."
