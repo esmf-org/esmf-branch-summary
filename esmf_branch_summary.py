@@ -372,6 +372,7 @@ def main(args):
             logging.error(
                 "git push failed.  Try updating the esmf-test-artifacts repo."
             )
+            raise
 
 
 if __name__ == "__main__":
