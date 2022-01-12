@@ -333,7 +333,7 @@ def main():
 
     repo_path = os.path.abspath(args.repo_path)
     os.chdir(repo_path)
-    git.pull(repo_path)
+    git.pull()
     branch_name = args.name
     logging.debug("HEY branchname is %s", branch_name)
     logging.info("checking out main")
