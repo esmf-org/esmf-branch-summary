@@ -140,17 +140,20 @@ def is_build_passing(file_path):
     logging.debug("fx=%s: vars=%s", inspect.stack()[0][3], locals())
     if not os.path.exists(file_path):
         logging.error("file path %s does not exist", file_path)
+        return False
     with open(file_path, "r") as _file:
-        not_found = []
+        is_passing = False
+        lines_read = []
         for idx, line in enumerate(reversed(list(_file))):
             if "ESMF library built successfully" in line:
-                return True
-            not_found.append(line)
+                is_passing = True
+            lines_read.append(line)
+            # Check the last 5 lines only for speed
             if idx > 5:
-                print(not_found)
-                return False
-        print(not_found)
-        return False
+                break
+        logging.debug("build result not found, see output:")
+        logging.debug(lines_read)
+        return is_passing
 
 
 def get_test_results(file_path):
@@ -191,6 +194,8 @@ def get_test_results(file_path):
                     _,
                     _temp["os"],
                 ) = group2.strip().split(" ")
+
+                # Keeps the order of insertion for printing
                 results["branch"] = _temp["branch"]
                 results["host"] = _temp["host"]
                 results["compiler_type"] = _temp["compiler_type"]
@@ -226,7 +231,7 @@ def get_test_results(file_path):
                     pass_, fail_ = "fail", "fail"
                     results[f"{key_cleaned}_pass"] = pass_
                     results[f"{key_cleaned}_fail"] = fail_
-                    logging.error(
+                    logging.warning(
                         "No %s test results in file %s", key_cleaned, file_path
                     )
     return results
@@ -260,6 +265,7 @@ def normalize(_path):
         "host": result[-8],
         "compiler_type": result[-7],
         "compiler_version": result[-6],
+        "o_g": result[-5],
         "mpi_type": result[-4],
         "mpi_version": result[-3].lower(),
     }
@@ -277,8 +283,13 @@ def fetch_build_result(needle, haystack):
         )
         return list(result)[0]["build_passed"]
     except IndexError as _:
-        logging.warning("fetch_build_result failed with needle: %s", needle)
+        logging.warning("build result not found")
+        logging.debug("needle: %s", needle)
         return False
+
+
+def generate_commit_message(_server, branch_name, _hash):
+    return f"updated summary for hash {_hash} on {branch_name}{_server}"
 
 
 def main(args):
@@ -299,50 +310,63 @@ def main(args):
     os.chdir(args.repo_path)
     branch_name = args.name
     logging.debug("HEY branchname is %s", branch_name)
-    logging.debug("checking out main")
+    logging.info("checking out main")
     checkout("main")
 
     for server in server_list:
-        logging.debug("checking out branch_name %s from server %s", branch_name, server)
+        logging.info("checking out branch_name %s from server %s", branch_name, server)
         checkout(branch_name, server, args.repo_path)
         _hash = get_last_branch_hash(branch_name, server)
-        logging.debug("last branch hash is %s", _hash)
+        logging.info("last branch hash is %s", _hash)
+
+        logging.info("fetching matching logs to determine build pass/fail")
         matching_logs = set(
             find_files(os.path.abspath(branch_name), [_hash], ["build.log"])
         )
-        logging.debug("parsing %s logs", len(matching_logs))
-
-        matching_summaries = set(
-            find_files(os.path.abspath(branch_name), [_hash], ["summary.dat"])
-        )
-
-        logging.debug("parsing %d summaries", len(matching_summaries))
-
+        logging.info("parsing %s logs", len(matching_logs))
         build_passing_results = []
         for idx, _file in enumerate(matching_logs):
             build_passing_results.append(
                 dict(**normalize(_file), **{"build_passed": is_build_passing(_file)})
             )
-        results = []
+        logging.info("done parsing logs")
+
+        logging.info("fetching matching summary files to extract test results")
+        test_results = []
+        matching_summaries = set(
+            find_files(os.path.abspath(branch_name), [_hash], ["summary.dat"])
+        )
+        logging.info("parsing %d summaries", len(matching_summaries))
         for idx, _file in enumerate(matching_summaries):
 
             result = get_test_results(_file)
             pass_fail = fetch_build_result(result, build_passing_results)
 
-            results.append({**result, "branch": branch_name, "build_passed": pass_fail})
+            test_results.append(
+                {**result, "branch": branch_name, "build_passed": pass_fail}
+            )
             if idx % 10 == 0:
                 logging.debug("scanned %d", idx)
+        logging.info("done parsing summaries")
+
         output_file_path = os.path.abspath(
-            os.path.join(args.repo_path, branch_name, f"{_hash}.summary")
+            os.path.join(args.repo_path, branch_name, f"{_hash}.md")
         )
-        logging.debug("writing results to %s", output_file_path)
-        write_file(results, output_file_path)
-        logging.debug("pushing summary to repo")
+
+        logging.info("writing summary results to %s", output_file_path)
+        write_file(test_results, output_file_path)
+
+        logging.info("git add %s, %s", output_file_path, args.repo_path)
         git.add(output_file_path, args.repo_path)
+
+        logging.info(
+            "committing [%s/%s/%s] to %s", server, branch_name, _hash, args.repo_path
+        )
         git.commit(
-            "create and push summary file", args.repo_path
+            generate_commit_message(server, branch_name, _hash), args.repo_path
         )  # Message update for test of intel_18.0.5_mpt_g_develop with hash ESMF_8_3_0_beta_snapshot_04-8-g60a38ef on cheyenne
-        git.push(repopath=args.repo_path)
+        logging.info("pushing summary to main from %s", args.repo_path)
+        git.push(branch="main", repopath=args.repo_path)
 
 
 if __name__ == "__main__":
@@ -352,7 +376,7 @@ if __name__ == "__main__":
         "error": logging.ERROR,
         "warn": logging.WARNING,
         "warning": logging.WARNING,
-        "info": logging.debug,
+        "info": logging.INFO,
         "debug": logging.DEBUG,
     }
     level = levels.get(args.log.lower())
@@ -366,5 +390,6 @@ if __name__ == "__main__":
             f"log level given: {args.log}"
             f" -- must be one of: {' | '.join(levels.keys())}"
         )
-    logging.basicConfig(level=level)
+    LOG_FORMAT = "%(asctime)s_%(name)s_%(levelname)s: %(message)s"
+    logging.basicConfig(level=level, format=LOG_FORMAT)
     main(args)
