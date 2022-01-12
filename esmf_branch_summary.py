@@ -315,7 +315,7 @@ def main():
             f"log level given: {args.log}"
             f" -- must be one of: {' | '.join(levels.keys())}"
         )
-    LOG_FORMAT = "%(asctime)s_%(name)s_%(levelname)s: %(message)s"
+    LOG_FORMAT = "%(asctime)s:%(levelname)s:%(name)s: %(message)s"
     logging.basicConfig(level=level, format=LOG_FORMAT)
 
     logging.debug("Args are : %s", args)
