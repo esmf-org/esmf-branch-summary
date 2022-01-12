@@ -366,7 +366,12 @@ def main(args):
             generate_commit_message(server, branch_name, _hash), args.repo_path
         )  # Message update for test of intel_18.0.5_mpt_g_develop with hash ESMF_8_3_0_beta_snapshot_04-8-g60a38ef on cheyenne
         logging.info("pushing summary to main from %s", args.repo_path)
-        git.push(branch="main", repopath=args.repo_path)
+        try:
+            git.push(branch="main", repopath=args.repo_path)
+        except subprocess.CalledProcessError as _:
+            logging.error(
+                "git push failed.  Try updating the esmf-test-artifacts repo."
+            )
 
 
 if __name__ == "__main__":
