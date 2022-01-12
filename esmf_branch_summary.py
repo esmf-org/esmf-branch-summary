@@ -54,7 +54,7 @@ def get_args():
 
 
 # branch = server(hera, cheyenne), branch_name=branch(main, develop)
-def checkout(branch_name, server="", path=os.getcwd()):
+def checkout(branch_name, server="", repopath=os.getcwd()):
     """checkout a branch or branch/server combo
 
     Args:
@@ -64,8 +64,8 @@ def checkout(branch_name, server="", path=os.getcwd()):
     """
     logging.debug("fx=%s: vars=%s", inspect.stack()[0][3], locals())
     if server == "":
-        return git.checkout(branch_name, repopath=path)
-    return git.checkout(server, "origin", branch_name, repopath=path)
+        return git.checkout(branch_name, repopath=repopath)
+    return git.checkout(server, "origin", branch_name, repopath=repopath)
 
 
 def any_string_in_string(needles, haystack):
@@ -332,12 +332,14 @@ def main():
     ]
 
     repo_path = os.path.abspath(args.repo_path)
+    logging.info("repo_path ", repo_path)
     os.chdir(repo_path)
-    git.pull()
+    logging.info(os.getcwd())
+    git.pull(repopath=repo_path)
     branch_name = args.name
     logging.debug("HEY branchname is %s", branch_name)
     logging.info("checking out main")
-    checkout("main")
+    checkout("main", repopath=repo_path)
 
     for server in server_list:
         logging.info("checking out branch_name %s from server %s", branch_name, server)
