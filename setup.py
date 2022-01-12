@@ -32,7 +32,7 @@ setup(
     author_email="ryan.long@noaa.gov",
     url="",
     py_modules=["esmf-branch-summary"],
-    install_requires=["esmf-git"],
+    install_requires=["esmf-git", "tabulate"],
     tests_require=["pytest"],
     license="MIT",
     classifiers=[
