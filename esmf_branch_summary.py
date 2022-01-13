@@ -100,7 +100,7 @@ def find_files(
                 has_filename_search_string and not has_filename_ignore_string
             ):
                 file_path = os.path.join(root, file)
-                with open(file_path, "r", errors="ignore") as _file:
+                with open(file_path, "r", errors="ignore", encoding="utf-8") as _file:
                     for line in _file.readlines():
                         if any(
                             search_string in line
@@ -141,7 +141,7 @@ def is_build_passing(file_path):
     if not os.path.exists(file_path):
         logging.error("file path %s does not exist", file_path)
         return False
-    with open(file_path, "r") as _file:
+    with open(file_path, "r", encoding="utf-8") as _file:
         is_passing = False
         lines_read = []
         for idx, line in enumerate(reversed(list(_file))):
@@ -172,7 +172,7 @@ def get_test_results(file_path):
     """
     _temp = {}
     results = OrderedDict()
-    with open(file_path, "r") as _file:
+    with open(file_path, "r", encoding="utf-8") as _file:
         for line in _file:
             if "Build for" in line:
                 line_cleaned = line.split("=", 1)[1].strip()
