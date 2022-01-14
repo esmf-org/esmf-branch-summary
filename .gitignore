@@ -9,3 +9,4 @@ eggs.csv
 .pytest_cache
 .tox
 .coverage
+esmf_branch_summary.log

@@ -13,6 +13,7 @@ import bisect
 import inspect
 import logging
 import os
+import sys
 import pathlib
 import subprocess
 from collections import OrderedDict
@@ -53,7 +54,19 @@ def get_args():
     return parser.parse_args()
 
 
-# branch = server(hera, cheyenne), branch_name=branch(main, develop)
+def memoize(func):
+    cache = {}
+
+    def memoized_func(*args):
+        if args in cache:
+            return cache[args]
+        result = func(*args)
+        cache[args] = result
+        return result
+
+    return memoized_func
+
+
 def checkout(branch_name, server="", repopath=os.getcwd()):
     """checkout a branch or branch/server combo
 
@@ -68,15 +81,11 @@ def checkout(branch_name, server="", repopath=os.getcwd()):
     return git.checkout(server, "origin", branch_name, repopath=repopath)
 
 
-def any_string_in_string(needles, haystack):
-    return any(needle in haystack for needle in needles)
-
-
 def find_files(
     _root_path,
     value_search_strings="",
-    file_name_search_strings=[],
-    file_name_ignore_strings=[],
+    file_name_search_strings=None,
+    file_name_ignore_strings=None,
 ):
 
     results = []
@@ -86,19 +95,22 @@ def find_files(
     for root, _, files in os.walk(_root_path, followlinks=True):
         for file in files:
             file = os.path.join(root, file)
-            has_filename_search = bool(
-                len(file_name_search_strings) + len(file_name_ignore_strings)
+            has_filename_search_string = (
+                True
+                if file_name_search_strings is None
+                else any(
+                    search_string in file for search_string in file_name_search_strings
+                )
             )
-            has_filename_search_string = any(
-                search_string in file for search_string in file_name_search_strings
-            )
-            has_filename_ignore_string = any(
-                search_string in file for search_string in file_name_ignore_strings
+            has_filename_ignore_string = (
+                False
+                if file_name_ignore_strings is None
+                else any(
+                    search_string in file for search_string in file_name_ignore_strings
+                )
             )
 
-            if not has_filename_search or (
-                has_filename_search_string and not has_filename_ignore_string
-            ):
+            if has_filename_search_string and not has_filename_ignore_string:
                 file_path = os.path.join(root, file)
                 with open(file_path, "r", errors="ignore", encoding="utf-8") as _file:
                     for line in _file.readlines():
@@ -238,7 +250,7 @@ def get_test_results(file_path):
 
 
 def write_file(data, file_path):
-    # logging.debug("fx=%s: vars=%s", inspect.stack()[0][3], locals())
+    logging.debug("fx=%s: vars=%s", inspect.stack()[0][3], locals())
     _sorted = sorted(
         data,
         key=lambda x: x["branch"]
@@ -256,6 +268,7 @@ def write_file(data, file_path):
 
 
 def normalize(_path):
+    logging.debug("fx=%s: vars=%s", inspect.stack()[0][3], locals())
     result = os.path.normpath(_path).split(os.sep)
     if len(result) < 14:
         result.insert(-2, "none")
@@ -272,29 +285,38 @@ def normalize(_path):
 
 
 def fetch_build_result(needle, haystack):
-    try:
-        result = filter(
-            lambda x: x["compiler_type"].lower() == needle["compiler_type"].lower()
-            and x["compiler_version"].lower() == needle["compiler_version"].lower()
-            and x["mpi_type"].lower() == needle["mpi_type"].lower()
-            and x["mpi_version"].lower() == needle["mpi_version"].lower()
-            and x["host"].lower() == needle["host"].lower(),
-            haystack,
-        )
-        return list(result)[0]["build_passed"]
-    except IndexError as _:
-        logging.warning("build result not found")
-        logging.debug("needle: %s", needle)
-        return False
+    _cache = {}
+
+    def wrapper(*args):
+        logging.debug("fx=%s: vars=%s", inspect.stack()[0][3], locals())
+        if args not in _cache:
+            try:
+                result = filter(
+                    lambda x: x["compiler_type"].lower()
+                    == needle["compiler_type"].lower()
+                    and x["compiler_version"].lower()
+                    == needle["compiler_version"].lower()
+                    and x["mpi_type"].lower() == needle["mpi_type"].lower()
+                    and x["mpi_version"].lower() == needle["mpi_version"].lower()
+                    and x["host"].lower() == needle["host"].lower(),
+                    haystack,
+                )
+                logging.info(list(result)[0])
+                _cache[args] = list(result)[0]["build_passed"]
+            except IndexError as _:
+                logging.warning("build result not found")
+                logging.debug("needle: %s", needle)
+                _cache[args] = False
+        return _cache[args]
+
+    return wrapper
 
 
 def generate_commit_message(_server, branch_name, _hash):
     return f"updated summary for hash {_hash} on {branch_name}{_server}"
 
 
-def main():
-    """main point of execution"""
-    args = get_args()
+def setup_logging(args):
     levels = {
         "critical": logging.CRITICAL,
         "error": logging.ERROR,
@@ -315,9 +337,67 @@ def main():
             f" -- must be one of: {' | '.join(levels.keys())}"
         )
     LOG_FORMAT = "%(asctime)s:%(levelname)s:%(name)s: %(message)s"
-    logging.basicConfig(level=level, format=LOG_FORMAT)
+    logging.basicConfig(level=level, format=LOG_FORMAT, stream=sys.stdout)
+
+
+def fetch_build_passing_results(logs):
+    _cache = {}
+
+    def wrapper(*args):
+        if args not in _cache:
+            build_passing_results = []
+            for _file in logs:
+                build_passing_results.append(
+                    dict(
+                        **normalize(_file), **{"build_passed": is_build_passing(_file)}
+                    )
+                )
+            _cache[args] = build_passing_results
+        return _cache[args]
+
+    return wrapper
+
+
+def fetch_test_results(branch_name: str, _hash: str):
+    matching_summaries = set(
+        find_files(os.path.abspath(branch_name), [_hash], ["summary.dat"])
+    )
+    matching_logs = set(
+        find_files(os.path.abspath(branch_name), [_hash], ["build.log"])
+    )
+    logging.info(
+        "matched: %s logs: %s summaries", len(matching_logs), len(matching_summaries)
+    )
+    build_passing_results = fetch_build_passing_results(matching_logs)
+    test_results = []
+    for idx, _file in enumerate(matching_summaries):
+
+        result = get_test_results(_file)
+        pass_fail = fetch_build_result(result, build_passing_results)
+
+        test_results.append(
+            {**result, "branch": branch_name, "build_passed": pass_fail}
+        )
+        if idx % 5 == 0:
+            logging.debug("scanned %d", idx)
+    return test_results
+
+
+def main():
+    """main point of execution"""
+    args = get_args()
+    setup_logging(args)
 
     logging.debug("Args are : %s", args)
+
+    repopath = os.path.abspath(args.repo_path)
+    os.chdir(repopath)
+
+    logging.info("running 'git pull' in %s", repopath)
+    git.pull(repopath=repopath)
+
+    logging.info("running 'git checkout main' in %s", repopath)
+    checkout("main", repopath=repopath)
 
     server_list = [
         "cheyenne",
@@ -329,58 +409,21 @@ def main():
         "chianti",
         "acorn",
     ]
-
-    repopath = os.path.abspath(args.repo_path)
-    os.chdir(repopath)
-    logging.info(os.getcwd())
-    git.pull(repopath=repopath)
     branch_name = args.name
-    logging.debug("HEY branchname is %s", branch_name)
-    logging.info("checking out main")
-    checkout("main", repopath=repopath)
-
     for server in server_list:
         logging.info("checking out branch_name %s from server %s", branch_name, server)
         checkout(branch_name, server, repopath)
+
         _hash = get_last_branch_hash(branch_name, server)
         logging.info("last branch hash is %s", _hash)
 
-        logging.info("fetching matching logs to determine build pass/fail")
-        matching_logs = set(
-            find_files(os.path.abspath(branch_name), [_hash], ["build.log"])
-        )
-        logging.info("parsing %s logs", len(matching_logs))
-        build_passing_results = []
-        for idx, _file in enumerate(matching_logs):
-            build_passing_results.append(
-                dict(**normalize(_file), **{"build_passed": is_build_passing(_file)})
-            )
-        logging.info("done parsing logs")
-
-        logging.info("fetching matching summary files to extract test results")
-        test_results = []
-        matching_summaries = set(
-            find_files(os.path.abspath(branch_name), [_hash], ["summary.dat"])
-        )
-        logging.info("parsing %d summaries", len(matching_summaries))
-        for idx, _file in enumerate(matching_summaries):
-
-            result = get_test_results(_file)
-            pass_fail = fetch_build_result(result, build_passing_results)
-
-            test_results.append(
-                {**result, "branch": branch_name, "build_passed": pass_fail}
-            )
-            if idx % 10 == 0:
-                logging.debug("scanned %d", idx)
-        logging.info("done parsing summaries")
+        results = fetch_test_results(branch_name, _hash)
 
         output_file_path = os.path.abspath(
             os.path.join(repopath, branch_name, f"{_hash}.md")
         )
-
         logging.info("writing summary results to %s", output_file_path)
-        write_file(test_results, output_file_path)
+        write_file(results, output_file_path)
 
         logging.info("git add %s, %s", output_file_path, repopath)
         git.add(output_file_path, repopath)
@@ -389,6 +432,7 @@ def main():
             "committing [%s/%s/%s] to %s", server, branch_name, _hash, repopath
         )
         git.commit(generate_commit_message(server, branch_name, _hash), repopath)
+
         logging.info("pushing summary to main from %s", repopath)
         try:
             git.push(branch="main", repopath=repopath)
