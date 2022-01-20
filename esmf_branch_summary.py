@@ -88,6 +88,9 @@ def find_files(
     file_name_ignore_strings=[],
 ):
 
+    if not os.path.exists(_root_path):
+        raise ValueError(f"{_root_path} is invalid")
+
     results = []
     if not isinstance(value_search_strings, List):
         value_search_strings = value_search_strings.split()
