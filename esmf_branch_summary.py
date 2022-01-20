@@ -501,8 +501,7 @@ def get_matching_logs(branch_name, _hash):
     return set(find_files(os.path.abspath(branch_name), [_hash], ["build.log"]))
 
 
-def get_matching_summaries(branch_name, _hash):
-    return set(find_files(os.path.abspath(branch_name), [_hash], ["summary.dat"]))
+    return set(find_files(cwd, [_hash], ["summary.dat"]))
 
 
 def parse_logs_for_build_passing(matching_logs):
