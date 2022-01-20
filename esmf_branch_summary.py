@@ -93,7 +93,9 @@ def find_files(
         value_search_strings = value_search_strings.split()
 
     for root, _, files in os.walk(_root_path, followlinks=True):
+        print(root)
         for file in files:
+            print(file)
             file = os.path.join(root, file)
             has_filename_search = bool(
                 len(file_name_search_strings) + len(file_name_ignore_strings)
@@ -546,11 +548,13 @@ def main():
     _hash = get_last_branch_hash(branch_name, machine_name)  # TODO change to regex?
     logging.info("last branch hash is %s", _hash)
 
+    # TODO Check if the file is empty, then warn or error
     output_file_path = os.path.abspath(
         os.path.join(repopath, branch_name, machine_name, f"{_hash}.md")
     )
 
     if not os.path.exists(output_file_path):
+        logging.info("generating %s", output_file_path)
         logging.info("fetching matching logs to determine build pass/fail")
         matching_logs = get_matching_logs(branch_name, _hash)
 
@@ -573,7 +577,7 @@ def main():
     logging.info("git add repopath")
     git.git_add()
 
-    logging.info("committing to %s", machine_name)
+    logging.info("committing to %s", branch_name)
     git.git_commit(generate_commit_message(machine_name, branch_name, _hash))
     git.git_push("origin", branch_name)
 
@@ -582,9 +586,18 @@ def main():
     logging.info("checking out summary")
     git.git_checkout("summary")
 
+    logging.info(
+        "checking out summary file %s from %s", f"{branch_name}{_hash}", branch_name
+    )
     git.git_checkout(branch_name, f"{branch_name}/{_hash}.md")
+
+    logging.info("adding all modified files in ")
     git.git_add()
+
+    logging.info("committing to %s", "summary")
     git.git_commit(generate_commit_message(machine_name, branch_name, _hash))
+
+    logging.info("pushing to summary")
     git.git_push("origin", "summary")
 
 
