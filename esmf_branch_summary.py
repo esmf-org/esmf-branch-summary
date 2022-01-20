@@ -497,10 +497,11 @@ def handle_logging(args):
     logging.basicConfig(level=level, format=LOG_FORMAT)
 
 
-def get_matching_logs(branch_name, _hash):
-    return set(find_files(os.path.abspath(branch_name), [_hash], ["build.log"]))
+def get_matching_logs(cwd, _hash):
+    return set(find_files(cwd, [_hash], ["build.log"]))
 
 
+def get_matching_summaries(cwd, _hash):
     return set(find_files(cwd, [_hash], ["summary.dat"]))
 
 
