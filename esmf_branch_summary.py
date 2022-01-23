@@ -99,7 +99,7 @@ def get_last_branch_hash(branch_name):
     """
     try:
         result = subprocess.run(
-            ["git", "log", "--format=%B", f"origin/{branch_name}"],
+            ["git", "log", "--format=%B", branch_name],
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             check=True,
@@ -116,7 +116,7 @@ def get_last_branch_hash(branch_name):
         except IndexError as _:
             return raw_line.split(" ")[4]
     except subprocess.CalledProcessError as e:
-        logging.error("Failed to find last hash for branch: %s", branch_name)
+        logging.error(e.stderr)
         return ""
 
 
@@ -289,7 +289,7 @@ def fetch_build_result(needle, haystack):
 
 
 def generate_commit_message(_machine_name, branch_name, _hash):
-    return f"updated summary for hash {_hash} on {branch_name}/{_machine_name}"
+    return f"updated summary for hash {_hash} on {branch_name}"
 
 
 def handle_logging(args):
@@ -371,7 +371,11 @@ def main():
         logging.info("git checking out branch: %s", branch_name)
         git.git_checkout(branch_name)
 
+        logging.info("finding last branch hash")
         _hash = get_last_branch_hash(branch_name)  # TODO change to regex?
+        if _hash == "":
+            logging.error("could not find last hash for branch: %s", branch_name)
+            continue
         logging.info("last branch hash is %s", _hash)
 
         # TODO Check if the file is empty, then warn or error

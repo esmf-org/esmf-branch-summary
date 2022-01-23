@@ -9,3 +9,6 @@ acorn:
 
 chianti:
 	python3 esmf_branch_summary.py ../esmf-test-artifacts/ chianti -b develop -l 'info'
+
+jet:
+	python3 esmf_branch_summary.py ../esmf-test-artifacts/ jet -b develop -l 'info'
