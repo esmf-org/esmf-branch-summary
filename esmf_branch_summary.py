@@ -8,19 +8,19 @@ author: Ryan Long <ryan.long@noaa.gov>
 """
 
 
-import argparse
 import bisect
 import datetime
 import hashlib
 import inspect
 import logging
 import os
-import pathlib
+
 import subprocess
 
 from collections import OrderedDict
 from typing import List
 
+from view import ViewCLI
 from git import Git
 from gateway import Archive, SummaryRow
 from tabulate import tabulate
@@ -37,45 +37,6 @@ MACHINE_NAME_LIST = sorted(
         "acorn",
     ]
 )
-
-
-def get_args():
-    """get_args display CLI to user and gets options
-
-    Returns:
-        Namespace: object-
-    """
-    parser = argparse.ArgumentParser(
-        description="esmf_branch_summary aggregates esmf framework test results from other branches into a summary file ."
-    )
-    parser.add_argument(
-        "repo_path",
-        type=pathlib.Path,
-        help="path to esmf-artifacts-merge",
-    )
-    parser.add_argument(
-        "machine_name",
-        type=str,
-        help="name of machine to summarize",
-        choices=MACHINE_NAME_LIST,
-    )
-    parser.add_argument(
-        "-b",
-        "--branches",
-        nargs="+",
-        help=(
-            "branch(es) to summarize. All by default. "
-            "Example --name develop feature_1 feature_2"
-        ),
-    )
-    parser.add_argument(
-        "-l",
-        "--log",
-        default="warning",
-        help=("Provide logging level. " "Example --log debug', default='warning'"),
-    )
-
-    return parser.parse_args()
 
 
 def any_string_in_string(needles, haystack):
@@ -155,7 +116,7 @@ def get_last_branch_hash(branch_name):
         except IndexError as _:
             return raw_line.split(" ")[4]
     except subprocess.CalledProcessError as e:
-        logging.error(e)
+        logging.error("Failed to find last hash for branch: %s", branch_name)
         return ""
 
 
@@ -389,64 +350,65 @@ def compile_test_results(matching_summaries, build_passing_results, branch_name)
 
 def main():
     """main point of execution"""
-    args = get_args()
+    args = ViewCLI(MACHINE_NAME_LIST).get_args()
+
     handle_logging(args)
     logging.debug("Args are : %s", args)
 
-    repopath = os.path.abspath(args.repo_path)
     gateway = Archive("./summaries.db")
+    repopath = os.path.abspath(args.repo_path)
     git = Git(repopath)
     git.git_fetch()
-    branch_name = args.branches[0]  # TODO not just develop
+
     machine_name = args.machine_name
+    branches = args.branches
+    for branch_name in branches:
 
-    CWD = os.path.abspath(os.path.join(repopath, branch_name, machine_name))
-    os.chdir(CWD)
-    logging.debug("current working directory is: %s = %s", CWD, os.getcwd())
+        CWD = os.path.abspath(os.path.join(repopath, branch_name))
+        os.chdir(CWD)
+        logging.debug("current working directory is: %s = %s", CWD, os.getcwd())
 
-    logging.info("git checking out branch: %s", branch_name)
-    git.git_checkout(branch_name)
+        logging.info("git checking out branch: %s", branch_name)
+        git.git_checkout(branch_name)
 
-    _hash = get_last_branch_hash(branch_name)  # TODO change to regex?
-    logging.info("last branch hash is %s", _hash)
+        _hash = get_last_branch_hash(branch_name)  # TODO change to regex?
+        logging.info("last branch hash is %s", _hash)
 
-    # TODO Check if the file is empty, then warn or error
-    output_file_path = os.path.abspath(os.path.join(repopath, f"{_hash}.md"))
+        # TODO Check if the file is empty, then warn or error
+        output_file_path = os.path.abspath(os.path.join(repopath, f"{_hash}.md"))
 
-    logging.info("fetching matching logs to determine build pass/fail")
-    matching_logs = get_matching_logs(CWD, _hash)
+        logging.info("fetching matching logs to determine build pass/fail")
+        matching_logs = get_matching_logs(CWD, _hash)
 
-    logging.info("fetching matching summary files to extract test results")
-    matching_summaries = get_matching_summaries(CWD, _hash)
+        logging.info("fetching matching summary files to extract test results")
+        matching_summaries = get_matching_summaries(CWD, _hash)
 
-    logging.info("parsing %s logs", len(matching_logs))
-    build_passing_results = parse_logs_for_build_passing(matching_logs)
-    logging.info("done parsing logs")
+        logging.info("parsing %s logs", len(matching_logs))
+        build_passing_results = parse_logs_for_build_passing(matching_logs)
+        logging.info("done parsing logs")
 
-    logging.info("parsing %d summaries", len(matching_summaries))
-    test_results = compile_test_results(
-        matching_summaries, build_passing_results, branch_name
-    )
-    logging.info("done parsing summaries")
+        logging.info("parsing %d summaries", len(matching_summaries))
+        test_results = compile_test_results(
+            matching_summaries, build_passing_results, branch_name
+        )
+        logging.info("done parsing summaries")
 
-    logging.info("writing summary results to %s", output_file_path)
+        git.git_checkout("summary")
+        write_archive(test_results, _hash, gateway)
 
-    git.git_checkout("summary")
-    write_archive(test_results, _hash, gateway)
+        summary_file_contents = [
+            item._asdict() for item in gateway.fetch_rows_by_hash(_hash)
+        ]
+        write_file(summary_file_contents, output_file_path)
 
-    summary_file_contents = [
-        item._asdict() for item in gateway.fetch_rows_by_hash(_hash)
-    ]
-    write_file(summary_file_contents, output_file_path)
+        logging.info("adding all modified files in summary")
+        git.git_add()
 
-    logging.info("adding all modified files in summary")
-    git.git_add()
+        logging.info("committing to %s", "summary")
+        git.git_commit(generate_commit_message(machine_name, branch_name, _hash))
 
-    logging.info("committing to %s", "summary")
-    git.git_commit(generate_commit_message(machine_name, branch_name, _hash))
-
-    logging.info("pushing to summary")
-    git.git_push("origin", "summary")
+        logging.info("pushing to summary")
+        git.git_push("origin", "summary")
 
 
 if __name__ == "__main__":
