@@ -10,14 +10,19 @@ author: Ryan Long <ryan.long@noaa.gov>
 
 import argparse
 import bisect
+import datetime
+import hashlib
 import inspect
 import logging
 import os
 import pathlib
 import subprocess
+
 from collections import OrderedDict
 from typing import List
 
+from git import Git
+from gateway import Archive, SummaryRow
 from tabulate import tabulate
 
 MACHINE_NAME_LIST = sorted(
@@ -77,10 +82,6 @@ def any_string_in_string(needles, haystack):
     return any(needle in haystack for needle in needles)
 
 
-def fetch_git_something():
-    pass
-
-
 def find_files(
     _root_path,
     value_search_strings="",
@@ -96,9 +97,7 @@ def find_files(
         value_search_strings = value_search_strings.split()
 
     for root, _, files in os.walk(_root_path, followlinks=True):
-        print(root)
         for file in files:
-            print(file)
             file = os.path.join(root, file)
             has_filename_search = bool(
                 len(file_name_search_strings) + len(file_name_ignore_strings)
@@ -125,18 +124,8 @@ def find_files(
     return results
 
 
-def git_fetch(repopath=os.getcwd()):
-    return subprocess.run(
-        ["git", "fetch"],
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-        cwd=repopath,
-        check=True,
-        encoding="utf-8",
-    )
-
-
-def get_last_branch_hash(branch_name, machine_name):
+def get_last_branch_hash(branch_name):
+    # TODO This is broken, getting the last hash from log...
     """get_last_branch_hash return the hash of the last commit
     to the branch/machine_name
 
@@ -147,20 +136,27 @@ def get_last_branch_hash(branch_name, machine_name):
     Returns:
         str:
     """
-    result = subprocess.run(
-        ["git", "log", "--format=%B", f"origin/{machine_name}"],
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-        check=True,
-        encoding="utf-8",
-    )
-    raw_line = list(filter(lambda x: machine_name in x, result.stdout.split("\n")))[0]
-
-    # TODO Why do we need to account for both?
     try:
-        return raw_line.split(" ")[7]
-    except IndexError as _:
-        return raw_line.split(" ")[4]
+        result = subprocess.run(
+            ["git", "log", "--format=%B", f"origin/{branch_name}"],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            check=True,
+            encoding="utf-8",
+        )
+        raw_line = list(
+            filter(
+                lambda x: branch_name in x and "ESMF" in x, result.stdout.split("\n")
+            )
+        )[0]
+        # TODO Why do we need to account for both?
+        try:
+            return raw_line.split(" ")[7]
+        except IndexError as _:
+            return raw_line.split(" ")[4]
+    except subprocess.CalledProcessError as e:
+        logging.error(e)
+        return ""
 
 
 def is_build_passing(file_path):
@@ -282,6 +278,22 @@ def write_file(data, file_path):
         _file.write(table)
 
 
+def generate_id(row, _hash):
+    return hashlib.md5(
+        f"{row['branch']}{row['host']}{row['os']}{row['compiler_type']}{row['compiler_version']}{row['mpi_type']}{row['mpi_version']}{_hash}".encode()
+    ).hexdigest()
+
+
+def write_archive(data, _hash, gateway: Archive):
+    timestamp = datetime.datetime.now()
+    gateway.create_table()
+    rows = [
+        SummaryRow(**item, hash=_hash, modified=timestamp, id=generate_id(item, _hash))
+        for item in data
+    ]
+    gateway.insert_rows(rows)
+
+
 def normalize(_path):
     result = os.path.normpath(_path).split(os.sep)
     if len(result) < 14:
@@ -317,160 +329,6 @@ def fetch_build_result(needle, haystack):
 
 def generate_commit_message(_machine_name, branch_name, _hash):
     return f"updated summary for hash {_hash} on {branch_name}/{_machine_name}"
-
-
-""" ==== GIT SECTION ==== """
-
-
-class Git:
-    def __init__(self, repopath=os.getcwd()):
-        self.repopath = repopath
-
-    @classmethod
-    def _command_safe(cls, cmd, cwd=os.getcwd()) -> subprocess.CompletedProcess:
-        """_command_safe ensures commands are run safely and raise exceptions
-        on error
-
-        https://stackoverflow.com/questions/4917871/does-git-return-specific-return-error-codes
-        """
-        WARNINGS = ["not something we can merge"]
-
-        try:
-            logging.debug("running '%s' in '%s'", cmd, cwd)
-            return subprocess.run(
-                cmd,
-                cwd=cwd,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-                check=True,
-                encoding="utf-8",
-            )
-        except subprocess.CalledProcessError as error:
-            logging.info(error.stdout)
-            if error.stderr:
-                if any((warning for warning in WARNINGS if warning in error.stderr)):
-                    logging.warning(error.stderr)
-                else:
-                    logging.error(error.stderr)
-                    raise
-            return subprocess.CompletedProcess(
-                returncode=0, args="", stdout=error.stdout
-            )
-
-    def git_fetch(self):
-        cmd = ["git", "fetch"]
-        return self._command_safe(cmd, self.repopath)
-
-    def git_add(self, _file_path=None):
-        """git_add
-
-        Args:
-            _path (str): path of assets to add
-            repopath (str, optional): local repository path if not cwd. Defaults to os.getcwd().
-
-        Returns:
-            CompletedProcess:
-        """
-        cmd = ["git", "add", "--all"]
-        if _file_path is not None:
-            cmd = ["git", "add", _file_path]
-        return self._command_safe(cmd, self.repopath)
-
-    def git_checkout(self, branch_name, path_spec=None):
-        """git_checkout
-
-        Args:
-            branch_name (str): name of the branch being checked out
-            repopath (str, optional): local repository path if not cwd. Defaults to os.getcwd().
-
-        Returns:
-            CompletedProcess:
-        """
-        cmd = ["git", "checkout", branch_name]
-
-        if path_spec is not None:
-            cmd.append("--")
-            cmd.append(path_spec)
-        return self._command_safe(cmd, self.repopath)
-
-    def git_commit(self, message):
-        """git_commit
-
-        Args:
-            username (str):
-            name (str): name of report to commit
-            repopath (str, optional): local repository path if not cwd. Defaults to os.getcwd().
-
-        Returns:
-            CompletedProcess:
-        """
-        cmd = ["git", "commit", "-m", f"'{message}'"]
-        return self._command_safe(cmd, self.repopath)
-
-    def git_status(self):
-        """status returns the output from git status
-
-        Args:
-            repopath (str, optional): The root path of the repo. Defaults to os.getcwd().
-
-        Returns:
-            CompletedProcess
-        """
-        return self._command_safe(["git", "status"], self.repopath)
-
-    def git_pull(self, destination="origin", branch=None):
-        """git_pull
-
-        Args:
-            destination (str, optional): Defaults to "origin".
-            branch (str, optional): Defaults to current branch.
-            repopath (str, optional): Defaults to os.getcwd().
-
-        Returns:
-            CompletedProcess
-        """
-
-        cmd = ["git", "pull", destination]
-        if branch:
-            cmd.append(branch)
-        return self._command_safe(cmd, self.repopath)
-
-    def git_push(self, destination="origin", branch=None):
-        """git_push
-
-        Args:
-            destination (str, optional): Defaults to "origin".
-            branch (str, optional): Defaults to current branch.
-            repopath (str, optional): Defaults to os.getcwd().
-
-        Returns:
-            CompletedProcess
-        """
-        cmd = ["git", "push", destination]
-        if branch is not None:
-            cmd.append(branch)
-        return self._command_safe(cmd, self.repopath)
-
-    def git_clone(self, url, target_path):
-        """git_clone
-
-        Args:
-            url (str): remote url
-            target_path (str): local target path
-
-        Returns:
-            CompletedProcess
-        """
-        cmd = ["git", "clone", url, target_path]
-        return self._command_safe(cmd, target_path)
-
-    def git_merge(self, machine_name):
-        cmd = ["git", "merge", f"{machine_name}"]
-        return self._command_safe(cmd)
-
-    def git_rebase(self, machine_name):
-        cmd = ["git", "rebase", f"origin/{machine_name}"]
-        return self._command_safe(cmd)
 
 
 def handle_logging(args):
@@ -536,65 +394,52 @@ def main():
     logging.debug("Args are : %s", args)
 
     repopath = os.path.abspath(args.repo_path)
+    gateway = Archive("./summaries.db")
     git = Git(repopath)
     git.git_fetch()
     branch_name = args.branches[0]  # TODO not just develop
     machine_name = args.machine_name
 
-    CWD = os.path.join(repopath, branch_name)
+    CWD = os.path.abspath(os.path.join(repopath, branch_name, machine_name))
     os.chdir(CWD)
     logging.debug("current working directory is: %s = %s", CWD, os.getcwd())
 
-    logging.info("git checkout machine_name: %s", machine_name)
+    logging.info("git checking out branch: %s", branch_name)
     git.git_checkout(branch_name)
 
-    _hash = get_last_branch_hash(branch_name, machine_name)  # TODO change to regex?
+    _hash = get_last_branch_hash(branch_name)  # TODO change to regex?
     logging.info("last branch hash is %s", _hash)
 
     # TODO Check if the file is empty, then warn or error
-    output_file_path = os.path.abspath(
-        os.path.join(repopath, branch_name, machine_name, f"{_hash}.md")
+    output_file_path = os.path.abspath(os.path.join(repopath, f"{_hash}.md"))
+
+    logging.info("fetching matching logs to determine build pass/fail")
+    matching_logs = get_matching_logs(CWD, _hash)
+
+    logging.info("fetching matching summary files to extract test results")
+    matching_summaries = get_matching_summaries(CWD, _hash)
+
+    logging.info("parsing %s logs", len(matching_logs))
+    build_passing_results = parse_logs_for_build_passing(matching_logs)
+    logging.info("done parsing logs")
+
+    logging.info("parsing %d summaries", len(matching_summaries))
+    test_results = compile_test_results(
+        matching_summaries, build_passing_results, branch_name
     )
+    logging.info("done parsing summaries")
 
-    if not os.path.exists(output_file_path):
-        logging.info("generating %s", output_file_path)
-        logging.info("fetching matching logs to determine build pass/fail")
-        matching_logs = get_matching_logs(branch_name, _hash)
+    logging.info("writing summary results to %s", output_file_path)
 
-        logging.info("fetching matching summary files to extract test results")
-        matching_summaries = get_matching_summaries(branch_name, _hash)
-
-        logging.info("parsing %s logs", len(matching_logs))
-        build_passing_results = parse_logs_for_build_passing(matching_logs)
-        logging.info("done parsing logs")
-
-        logging.info("parsing %d summaries", len(matching_summaries))
-        test_results = compile_test_results(
-            matching_summaries, build_passing_results, branch_name
-        )
-        logging.info("done parsing summaries")
-
-        logging.info("writing summary results to %s", output_file_path)
-        write_file(test_results, output_file_path)
-
-    logging.info("git add repopath")
-    git.git_add()
-
-    logging.info("committing to %s", branch_name)
-    git.git_commit(generate_commit_message(machine_name, branch_name, _hash))
-    git.git_push("origin", branch_name)
-
-    git.git_fetch()
-
-    logging.info("checking out summary")
     git.git_checkout("summary")
+    write_archive(test_results, _hash, gateway)
 
-    logging.info(
-        "checking out summary file %s from %s", f"{branch_name}{_hash}", branch_name
-    )
-    git.git_checkout(branch_name, f"{branch_name}/{_hash}.md")
+    summary_file_contents = [
+        item._asdict() for item in gateway.fetch_rows_by_hash(_hash)
+    ]
+    write_file(summary_file_contents, output_file_path)
 
-    logging.info("adding all modified files in ")
+    logging.info("adding all modified files in summary")
     git.git_add()
 
     logging.info("committing to %s", "summary")
