@@ -354,7 +354,7 @@ def compile_test_results(matching_summaries, build_passing_results, branch_name)
         test_results.append(
             {**result, "branch": branch_name, "build_passed": pass_fail}
         )
-        if idx % 10 == 0:
+        if idx % 10 == 0 and idx > 0:
             logging.debug("scanned %d", idx)
     return test_results
 
