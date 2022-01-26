@@ -3,10 +3,8 @@ import pathlib
 
 
 class ViewCLI:
-    def __init__(self, machine_names_list):
-        self.machine_names_list = machine_names_list
-
-    def get_args(self):
+    @classmethod
+    def get_args(cls):
         """get_args display CLI to user and gets options
 
         Returns:
@@ -19,12 +17,6 @@ class ViewCLI:
             "repo_path",
             type=pathlib.Path,
             help="path to esmf-artifacts-merge",
-        )
-        parser.add_argument(
-            "machine_name",
-            type=str,
-            help="name of machine to summarize",
-            choices=self.machine_names_list,
         )
         parser.add_argument(
             "-b",

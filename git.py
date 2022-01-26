@@ -1,6 +1,7 @@
 import logging
 import os
 import subprocess
+from typing import List
 
 
 class Git:
@@ -17,7 +18,6 @@ class Git:
         WARNINGS = ["not something we can merge"]
 
         try:
-            logging.debug("running '%s' in '%s'", cmd, cwd)
             return subprocess.run(
                 cmd,
                 cwd=cwd,
@@ -38,13 +38,45 @@ class Git:
                 returncode=0, args="", stdout=error.stdout
             )
 
-    def git_show(self, branch, path_spec):
-        cmd = [
-            "git",
-            "show",
-            f"{branch}:{path_spec}",
+    def git_reset_branch(self):
+        return self._command_safe(["git", "checkout", "."], self.repopath)
+
+    def git_list_all_branches(self, url=None) -> List[str]:
+        if url is None:
+            return [
+                item.strip()
+                for item in self._command_safe(
+                    ["git", "branch", "-r"], self.repopath
+                ).stdout.split("\n")[1:-1]
+            ]
+        return [
+            item
+            for item in self._command_safe(
+                ["git", "ls-remote", "--heads", "--refs", url],
+                self.repopath,
+            ).stdout.split("\n")
         ]
-        return self._command_safe(cmd, self.repopath)
+
+    def git_snapshot(self, url):
+        # TODO return better data type
+        return [
+            item.split("\t")[1].replace("refs/heads/", "")
+            for item in self._command_safe(
+                ["git", "ls-remote", "--heads", "--refs", url],
+                self.repopath,
+            ).stdout.split("\n")
+            if len(item) > 0
+        ]
+
+    def git_show(self, branch, path_spec):
+        return self._command_safe(
+            [
+                "git",
+                "show",
+                f"{branch}:{path_spec}",
+            ],
+            self.repopath,
+        )
 
     def git_fetch(self):
         cmd = ["git", "fetch"]
@@ -65,7 +97,7 @@ class Git:
             cmd = ["git", "add", _file_path]
         return self._command_safe(cmd, self.repopath)
 
-    def git_checkout(self, branch_name, path_spec=None, local_path=None):
+    def git_checkout(self, branch_name, path_spec=None, local_path=None, force=False):
         """git_checkout
 
         Args:
@@ -75,14 +107,20 @@ class Git:
         Returns:
             CompletedProcess:
         """
-        cmd = ["git", "checkout", branch_name]
+        cmd = ["git", "checkout"]
 
+        cmd.append(branch_name)
         if path_spec is not None:
             cmd.append("--")
             cmd.append(path_spec)
             if local_path is not None:
                 cmd.append(local_path)
-        return self._command_safe(cmd, self.repopath)
+        try:
+            return self._command_safe(cmd, self.repopath)
+        except subprocess.CalledProcessError as _:
+            if force:
+                cmd.insert(2, "-b")
+                return self._command_safe(cmd, self.repopath)
 
     def git_commit(self, message):
         """git_commit
