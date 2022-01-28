@@ -18,7 +18,7 @@ import re
 import timeit
 import subprocess
 from collections import OrderedDict
-from typing import List
+from typing import Generator, Tuple
 
 from tabulate import tabulate
 
@@ -43,17 +43,22 @@ MACHINE_NAME_LIST = sorted(
 def find_files(
     _root_path,
     value_search_strings="",
-    file_name_search_strings=[],
-    file_name_ignore_strings=[],
+    file_name_search_strings=None,
+    file_name_ignore_strings=None,
 ):
 
     if not os.path.exists(_root_path):
         raise ValueError(f"{_root_path} is invalid")
 
-    results = []
-    if not isinstance(value_search_strings, List):
-        value_search_strings = value_search_strings.split()
+    file_name_search_strings = (
+        [] if file_name_search_strings is None else list(file_name_search_strings)
+    )
 
+    file_name_ignore_strings = (
+        [] if file_name_ignore_strings is None else list(file_name_ignore_strings)
+    )
+
+    results = []
     for root, _, files in os.walk(_root_path, followlinks=True):
         for file in files:
             file = os.path.join(root, file)
@@ -82,14 +87,14 @@ def find_files(
     return results
 
 
-def get_last_branch_hash(machine_name, branch_name) -> str:
-    result = list(get_branch_hashes(machine_name, branch_name))
+def get_last_branch_hash(machine_name, branch_name, git) -> str:
+    result = list(get_branch_hashes(machine_name, git, branch_name))
     if not result:
         return ""
     return result[0]
 
 
-def get_branch_hashes(machine_name, branch_name=None):
+def get_branch_hashes(machine_name, git: Git, branch_name=None):
     # TODO This is broken, getting the last hash from log...
     """get_last_branch_hash return the hash of the last commit
     to the branch/machine_name
@@ -102,13 +107,9 @@ def get_branch_hashes(machine_name, branch_name=None):
         str:
     """
     try:
-        result = subprocess.run(
-            ["git", "log", "--format=%B", f"origin/{machine_name}"],
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            check=True,
-            encoding="utf-8",
-        )
+
+        result = git.git_log(f"origin/{machine_name}")
+
         output = result.stdout.split("\n")
         pattern = r"ESMF.*-\S{8}"
         if branch_name is not None:
@@ -119,7 +120,9 @@ def get_branch_hashes(machine_name, branch_name=None):
             if len(re.findall(pattern, item)) > 0
         )
         result = []
-        [result.append(x) for x in hashes if x not in result]
+        for _hash in hashes:
+            if _hash not in result:
+                result.append(_hash)
         return result
 
     except subprocess.CalledProcessError as e:
@@ -173,7 +176,7 @@ def fetch_test_results(file_path):
                     _temp["mpi_type"],
                     _temp["o_g"],
                     _temp["branch"],
-                ) = group1.strip().split("_")
+                ) = group1.strip().split("_")[:5]
 
                 (
                     _,
@@ -228,9 +231,11 @@ def fetch_test_results(file_path):
 
 
 def write_file(data, file_path):
+    logging.info(data[0])
     _sorted = sorted(
         data,
-        key=lambda x: x["branch"]
+        key=lambda x: str(x["build_passed"])
+        + x["branch"]
         + x["host"]
         + x["compiler_type"]
         + x["compiler_version"]
@@ -245,6 +250,7 @@ def write_file(data, file_path):
 
 
 def generate_id(row, _hash):
+    """generate an md5 hash from unique row data"""
     return hashlib.md5(
         f"{row['branch']}{row['host']}{row['os']}{row['compiler_type']}{row['compiler_version']}{row['mpi_type']}{row['mpi_version']}{_hash}".encode()
     ).hexdigest()
@@ -327,12 +333,12 @@ def handle_logging(args):
     logging.basicConfig(level=logging.DEBUG, format=LOG_FORMAT)
 
 
-def get_matching_logs(cwd, _hash):
-    return set(find_files(cwd, [_hash], ["build.log"]))
+def get_matching_logs(cwd: str, _hash: str):
+    return set(find_files(cwd, [_hash.replace("/", "_")], ["build.log"]))
 
 
-def get_matching_summaries(cwd, _hash):
-    return set(find_files(cwd, [_hash], ["summary.dat"]))
+def get_matching_summaries(cwd: str, _hash: str):
+    return set(find_files(cwd, [_hash.replace("/", "_")], ["summary.dat"]))
 
 
 def parse_logs_for_build_passing(matching_logs):
@@ -356,10 +362,13 @@ def compile_test_results(matching_summaries, build_passing_results, branch_name)
         )
         if idx % 10 == 0 and idx > 0:
             logging.debug("scanned %d", idx)
+        if idx >= len(matching_summaries) - 1:
+            logging.debug("scanned %d", idx + 1)
     return test_results
 
 
-def generate_permutations(list1, list2):
+def generate_permutations(list1, list2) -> Generator[Tuple, None, None]:
+    """retuns list of tuples containing each permutation of the two lists"""
     return (each_permutation for each_permutation in itertools.product(list1, list2))
 
 
@@ -368,16 +377,17 @@ def generate_summary_file_contents(_hash, gateway):
 
 
 def generate_link(_hash, **kwds):
-    # ESMF_8_3_0_beta_snapshot_06-9-gd3f8b21
-    return f"[{_hash}](https://github.com/ryanlong1004/esmf-test-artifacts/tree/{kwds['host']}/{kwds['branch']}/{kwds['compiler_type']}/{kwds['compiler_version']}/{kwds['o_g']}/{kwds['mpi_type']}/{kwds['mpi_version']})"
+    """generates a link to github to jump to the _hash passed in"""
+    return f"[{_hash}](https://github.com/ryanlong1004/esmf-test-artifacts/tree/{kwds['host'].replace('/', '_')}/{kwds['branch']}/{kwds['host'].replace('/', '_')}/{kwds['compiler_type']}/{kwds['compiler_version']}/{kwds['o_g']}/{kwds['mpi_type']}/{kwds['mpi_version']})"
 
 
 def strip_branch_prefix(value):
-    # strip_branch_prefix = partial(str.replace, "origin/", "")
+    """removes 'origin' and '/' the the branch"""
     return value.replace("origin", "").replace("/", "_")
 
 
 def fetch_summary_file_contents(_hash, gateway):
+    """fetches the contents to create a summary file based on _hash"""
     results = []
     for item in gateway.fetch_rows_by_hash(_hash):
         row = item._asdict()
@@ -385,19 +395,14 @@ def fetch_summary_file_contents(_hash, gateway):
         results.append(dict(**row))
     return results
 
-    # return [
-    #     dict(**item._asdict(), hash=generate_link(_hash, **item._asdict()))
-    #     for item in gateway.fetch_rows_by_hash(_hash)
-    # ]
-
 
 def main():
     """main point of execution"""
 
     starttime = timeit.default_timer()
     args = ViewCLI().get_args()
-
     handle_logging(args)
+
     logging.info("starting...")
     logging.debug("Args are : %s", args)
 
@@ -422,6 +427,9 @@ def main():
     )
 
     for machine_name, branch_name in generate_permutations(MACHINE_NAME_LIST, branches):
+        logging.info(
+            "executing summary for branch %s on machine %s", branch_name, machine_name
+        )
         logging.debug("git checking out branch: %s [%s]", branch_name, machine_name)
         git.git_checkout(machine_name)
 
@@ -434,14 +442,15 @@ def main():
         logging.debug("current working directory is: %s = %s", CWD, os.getcwd())
 
         logging.debug("finding last branch hash")
-        _hash = get_last_branch_hash(machine_name, branch_name)  # TODO change to regex?
+        _hash = get_last_branch_hash(machine_name, branch_name, git)
         if _hash == "":
-            logging.error("could not find last hash for branch: %s", branch_name)
+            logging.info(
+                "could not find last hash for branch: %s on %s, SKIPPING",
+                branch_name,
+                machine_name,
+            )
             continue
         logging.debug("last branch hash is %s", _hash)
-
-        # TODO Check if the file is empty, then warn or error
-        output_file_path = os.path.abspath(os.path.join(repopath, f"{_hash}.md"))
 
         logging.debug("fetching matching logs to determine build pass/fail")
         matching_logs = get_matching_logs(CWD, _hash)
@@ -459,15 +468,19 @@ def main():
         )
         logging.debug("done parsing summaries")
 
-        git.git_checkout("summary", force=True)
-        write_archive(test_results, _hash, gateway)
-        write_file(fetch_summary_file_contents(_hash, gateway), output_file_path)
+        git.git_checkout(branch_name="summary", force=True)
+        if len(test_results) > 0:
+            output_file_path = os.path.abspath(
+                os.path.join(repopath, f"{_hash.replace('/', '_')}.md")
+            )
+            write_archive(test_results, _hash, gateway)
+            write_file(fetch_summary_file_contents(_hash, gateway), output_file_path)
 
-        logging.debug("adding all modified files in summary")
-        git.git_add()
+            logging.debug("adding all modified files in summary")
+            git.git_add()
 
-        logging.debug("committing to %s", "summary")
-        git.git_commit(generate_commit_message(branch_name, _hash))
+            logging.debug("committing to %s", "summary")
+            git.git_commit(generate_commit_message(branch_name, _hash))
 
         logging.debug("pushing to summary")
         git.git_push("origin", "summary")
@@ -475,8 +488,4 @@ def main():
 
 
 if __name__ == "__main__":
-    import timeit
-
-    starttime = timeit.default_timer()
     main()
-    logging.info("finished in %s", timeit.default_timer() - starttime)
