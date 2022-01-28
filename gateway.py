@@ -8,6 +8,11 @@ SummaryRow = namedtuple(
     "branch, host, compiler_type, compiler_version, mpi_type, mpi_version, o_g, os, unit_pass, unit_fail, system_pass, system_fail, example_pass, example_fail, nuopc_pass, nuopc_fail, build_passed, hash, modified, id",
 )
 
+SummaryRowFormatted = namedtuple(
+    "SummaryRowFormatted",
+    "build_passed, branch, host, compiler_type, compiler_version, mpi_type, mpi_version, o_g, os, unit_pass, unit_fail, system_pass, system_fail, example_pass, example_fail, nuopc_pass, nuopc_fail, hash, modified, id",
+)
+
 
 class Archive:
     def __init__(self, db_path):
@@ -32,7 +37,7 @@ class Archive:
     def fetch_rows_by_hash(self, _hash: str):
         cur = self.con.cursor()
         cur.execute(
-            """SELECT branch, host, compiler_type, compiler_version, mpi_type, mpi_version, o_g, os, unit_pass, unit_fail, system_pass, system_fail, example_pass, example_fail, nuopc_pass, nuopc_fail, build_passed, hash, modified, id FROM Summaries WHERE hash = ?""",
+            """SELECT build_passed, branch, host, compiler_type, compiler_version, mpi_type, mpi_version, o_g, os, unit_pass, unit_fail, system_pass, system_fail, example_pass, example_fail, nuopc_pass, nuopc_fail, hash, modified, id FROM Summaries WHERE hash = ?""",
             (_hash,),
         )
-        return (SummaryRow(*item) for item in cur.fetchall())
+        return (SummaryRowFormatted(*item) for item in cur.fetchall())
