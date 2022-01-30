@@ -88,6 +88,7 @@ def find_files(
 
 
 def get_last_branch_hash(machine_name, branch_name, git) -> str:
+    """Returns the most recent branch on machine_name + branch_name"""
     result = list(get_branch_hashes(machine_name, git, branch_name))
     if not result:
         return ""
@@ -96,16 +97,7 @@ def get_last_branch_hash(machine_name, branch_name, git) -> str:
 
 def get_branch_hashes(machine_name, git: Git, branch_name=None):
     # TODO This is broken, getting the last hash from log...
-    """get_last_branch_hash return the hash of the last commit
-    to the branch/machine_name
-
-    Args:
-        branch_name (str): develop, main, etc
-        machine_name (str): cheyenne, hera
-
-    Returns:
-        str:
-    """
+    """Uses git log to determine all hashes for a machine_name/(branch_name)"""
     try:
 
         result = git.git_log(f"origin/{machine_name}")
@@ -131,6 +123,7 @@ def get_branch_hashes(machine_name, git: Git, branch_name=None):
 
 
 def is_build_passing(file_path):
+    """Determines if the build is passing by scanning file_path"""
     if not os.path.exists(file_path):
         logging.error("file path %s does not exist", file_path)
         return False
@@ -150,19 +143,7 @@ def is_build_passing(file_path):
 
 
 def fetch_test_results(file_path):
-    """get_test_results scrapes data from the file at
-    file_path and compiles a csv/table summarizing the
-    data.
-
-    Each return value is essentially a row in the csv, with
-    key/value pairs.
-
-    Args:
-        file_path (str): absolute or relative file path
-
-    Returns:
-        dict: fieldname/value
-    """
+    """Fetches test results from file_path and returns them as an ordered dict"""
     _temp = {}
     results = OrderedDict()
     with open(file_path, "r", encoding="utf-8") as _file:
@@ -231,7 +212,6 @@ def fetch_test_results(file_path):
 
 
 def write_file(data, file_path):
-    logging.info(data[0])
     _sorted = sorted(
         data,
         key=lambda x: str(x["build_passed"])
@@ -329,8 +309,18 @@ def handle_logging(args):
             f"log level given: {args.log}"
             f" -- must be one of: {' | '.join(levels.keys())}"
         )
-    LOG_FORMAT = "%(asctime)s:%(levelname)s:%(name)s: %(message)s"
-    logging.basicConfig(level=logging.DEBUG, format=LOG_FORMAT)
+    LOG_FORMAT = "%(asctime)s %(name)-12s %(levelname)-8s %(message)s"
+    LOG_FORMATTER = logging.Formatter(LOG_FORMAT)
+    logging.basicConfig(
+        level=logging.DEBUG,
+        format=LOG_FORMAT,
+        filename="esmf-branch-summary.log",
+        filemode="w",
+    )
+    console = logging.StreamHandler()
+    console.setLevel(level)
+    console.setFormatter(LOG_FORMATTER)
+    logging.getLogger("").addHandler(console)
 
 
 def get_matching_logs(cwd: str, _hash: str):
@@ -343,10 +333,14 @@ def get_matching_summaries(cwd: str, _hash: str):
 
 def parse_logs_for_build_passing(matching_logs):
     build_passing_results = []
-    for _file in matching_logs:
+    for idx, _file in enumerate(matching_logs):
         build_passing_results.append(
             dict(**normalize(_file), **{"build_passed": is_build_passing(_file)})
         )
+        if idx % 10 == 0 and idx > 0:
+            logging.debug("%d finished", idx)
+        if idx >= len(matching_logs) - 1:
+            logging.debug("%d finished", idx + 1)
     return build_passing_results
 
 
@@ -361,9 +355,9 @@ def compile_test_results(matching_summaries, build_passing_results, branch_name)
             {**result, "branch": branch_name, "build_passed": pass_fail}
         )
         if idx % 10 == 0 and idx > 0:
-            logging.debug("scanned %d", idx)
+            logging.debug("%d finished", idx)
         if idx >= len(matching_summaries) - 1:
-            logging.debug("scanned %d", idx + 1)
+            logging.debug("%d finished", idx + 1)
     return test_results
 
 
@@ -376,9 +370,9 @@ def generate_summary_file_contents(_hash, gateway):
     return [item._asdict() for item in gateway.fetch_rows_by_hash(_hash)]
 
 
-def generate_link(_hash, **kwds):
+def generate_link(**kwds):
     """generates a link to github to jump to the _hash passed in"""
-    return f"[{_hash}](https://github.com/ryanlong1004/esmf-test-artifacts/tree/{kwds['host'].replace('/', '_')}/{kwds['branch']}/{kwds['host'].replace('/', '_')}/{kwds['compiler_type']}/{kwds['compiler_version']}/{kwds['o_g']}/{kwds['mpi_type']}/{kwds['mpi_version']})"
+    return f"[artifacts](https://github.com/ryanlong1004/esmf-test-artifacts/tree/{kwds['host'].replace('/', '_')}/{kwds['branch']}/{kwds['host'].replace('/', '_')}/{kwds['compiler_type']}/{kwds['compiler_version']}/{kwds['o_g']}/{kwds['mpi_type']}/{kwds['mpi_version']})"
 
 
 def strip_branch_prefix(value):
@@ -391,7 +385,7 @@ def fetch_summary_file_contents(_hash, gateway):
     results = []
     for item in gateway.fetch_rows_by_hash(_hash):
         row = item._asdict()
-        row["hash"] = generate_link(_hash, **item._asdict())
+        row["hash"] = generate_link(**item._asdict())
         results.append(dict(**row))
     return results
 
@@ -428,7 +422,7 @@ def main():
 
     for machine_name, branch_name in generate_permutations(MACHINE_NAME_LIST, branches):
         logging.info(
-            "executing summary for branch %s on machine %s", branch_name, machine_name
+            "starting summary for branch %s on machine %s", branch_name, machine_name
         )
         logging.debug("git checking out branch: %s [%s]", branch_name, machine_name)
         git.git_checkout(machine_name)
@@ -438,8 +432,6 @@ def main():
             logging.debug("creating directory %s", CWD)
             os.mkdir(CWD)
         os.chdir(CWD)
-
-        logging.debug("current working directory is: %s = %s", CWD, os.getcwd())
 
         logging.debug("finding last branch hash")
         _hash = get_last_branch_hash(machine_name, branch_name, git)
@@ -458,15 +450,15 @@ def main():
         logging.debug("fetching matching summary files to extract test results")
         matching_summaries = get_matching_summaries(CWD, _hash)
 
-        logging.debug("parsing %s logs", len(matching_logs))
+        logging.debug("reading %s logs", len(matching_logs))
         build_passing_results = parse_logs_for_build_passing(matching_logs)
-        logging.debug("done parsing logs")
+        logging.debug("finished reading logs")
 
-        logging.debug("parsing %d summaries", len(matching_summaries))
+        logging.debug("reading %d summaries", len(matching_summaries))
         test_results = compile_test_results(
             matching_summaries, build_passing_results, branch_name
         )
-        logging.debug("done parsing summaries")
+        logging.debug("finished reading summaries")
 
         git.git_checkout(branch_name="summary", force=True)
         if len(test_results) > 0:
@@ -484,7 +476,10 @@ def main():
 
         logging.debug("pushing to summary")
         git.git_push("origin", "summary")
-    logging.info("finished in %s", timeit.default_timer() - starttime)
+        logging.info(
+            "finished summary for branch %s on machine %s", branch_name, machine_name
+        )
+    logging.info("finished in %s", (timeit.default_timer() - starttime) / 60)
 
 
 if __name__ == "__main__":
