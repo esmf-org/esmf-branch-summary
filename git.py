@@ -105,7 +105,7 @@ class Git:
         except subprocess.CalledProcessError as _:
             if force:
                 cmd.insert(2, "-b")
-                logging.info(cmd)
+                logging.info("%s does not exist; force flag is %s", branch_name, force)
                 return self._command_safe(cmd, self.repopath)
 
     def git_commit(self, message):
