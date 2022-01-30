@@ -112,7 +112,7 @@ class Git:
         git checkout <branch_name> -- <path_spec> <local_path>
         git checkout -b <branch_name> ...
         """
-        cmd = ["git", "checkout", "branch_name"]
+        cmd = ["git", "checkout", branch_name]
         if path_spec is not None:
             cmd.append("--")
             cmd.append(path_spec)
