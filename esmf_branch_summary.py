@@ -10,6 +10,7 @@ author: Ryan Long <ryan.long@noaa.gov>
 
 import bisect
 import datetime
+import functools
 import hashlib
 import itertools
 import logging
@@ -117,6 +118,7 @@ def to_unique(items: Generator[str, None, None]) -> Generator[str, None, None]:
             yield item
 
 
+@functools.lru_cache
 def get_branch_hashes(
     machine_name, git: Git, branch_name=None
 ) -> Generator[str, None, None]:
@@ -149,8 +151,8 @@ def is_build_passing(file_path):
             # Check the last 5 lines only for speed
             if idx > 5:
                 break
-        logging.debug("build result not found, see output:")
-        logging.debug(lines_read)
+        logging.debug("build result not found, see output below:")
+        logging.debug("\n".join(lines_read))
         return is_passing
 
 
