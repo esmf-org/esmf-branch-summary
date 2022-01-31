@@ -308,6 +308,7 @@ def generate_commit_message(branch_name, _hash):
 
 
 def handle_logging(args):
+    dir_path = os.path.dirname(os.path.realpath(__file__))
     levels = {
         "critical": logging.CRITICAL,
         "error": logging.ERROR,
@@ -332,7 +333,7 @@ def handle_logging(args):
     logging.basicConfig(
         level=logging.DEBUG,
         format=LOG_FORMAT,
-        filename="esmf-branch-summary.log",
+        filename=f"{os.path.join(dir_path, 'esmf-branch-summary.log')}",
         filemode="w",
     )
     console = logging.StreamHandler()
