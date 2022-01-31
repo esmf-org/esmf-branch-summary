@@ -9,3 +9,5 @@ eggs.csv
 .pytest_cache
 .tox
 .coverage
+summaries.db
+*log

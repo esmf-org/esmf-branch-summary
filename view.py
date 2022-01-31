@@ -1,4 +1,5 @@
 import argparse
+from numbers import Integral
 import pathlib
 
 
@@ -25,6 +26,15 @@ class ViewCLI:
             help=(
                 "branch(es) to summarize. All by default. "
                 "Example --name develop feature_1 feature_2"
+            ),
+        )
+        parser.add_argument(
+            "-n",
+            "--number",
+            type=int,
+            default=1,
+            help=(
+                "number of commits to compile from most recent" "Example --number 10"
             ),
         )
         parser.add_argument(
