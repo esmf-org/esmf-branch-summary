@@ -416,7 +416,20 @@ def get_cwd(repopath, branch_name):
     return CWD
 
 
-def generate_summaries(machine_name, branch_name, git, qty, CWD, repopath, gateway):
+def get_compressor(tar_path, branch_name, machine_name, _hash) -> Compressor:
+    if not os.path.exists(tar_path):
+        os.makedirs(tar_path)
+    return Compressor(
+        os.path.join(
+            tar_path,
+            f"./{branch_name.replace('/', '_')}-{machine_name}-{_hash}_error_artifacts.tar.gz",
+        )
+    )
+
+
+def generate_summaries(
+    machine_name, branch_name, git, qty, CWD, repopath, gateway, ROOT_CWD
+):
     for _hash in get_recent_branch_hashes(machine_name, branch_name, qty, git):
 
         logging.debug("last branch hash is %s", _hash)
@@ -432,11 +445,8 @@ def generate_summaries(machine_name, branch_name, git, qty, CWD, repopath, gatew
         logging.debug("finished reading logs")
 
         logging.debug("reading %d summaries", len(matching_summaries))
-        compressor = Compressor(
-            os.path.join(
-                os.getcwd(), f"./{branch_name}-{machine_name}-{_hash}_error_artifacts.tar.gz"
-            )
-        )
+        tar_path = os.path.join(ROOT_CWD, "error_artifacts")
+        compressor = get_compressor(tar_path, branch_name, machine_name, _hash)
         test_results = compile_test_results(
             matching_summaries, build_passing_results, branch_name, compressor
         )
@@ -466,6 +476,8 @@ def generate_summaries(machine_name, branch_name, git, qty, CWD, repopath, gatew
 
 def main():
     """main point of execution"""
+
+    ROOT_CWD = os.getcwd()
 
     starttime = timeit.default_timer()
     args = ViewCLI().get_args()
@@ -504,7 +516,14 @@ def main():
         CWD = get_cwd(repopath, branch_name)
         os.chdir(CWD)
         generate_summaries(
-            machine_name, branch_name, git, args.number, CWD, repopath, gateway
+            machine_name,
+            branch_name,
+            git,
+            args.number,
+            CWD,
+            repopath,
+            gateway,
+            ROOT_CWD,
         )
         logging.info(
             "finished summaries for branch %s on machine %s", branch_name, machine_name
