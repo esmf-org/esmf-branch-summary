@@ -502,7 +502,6 @@ def main():
 
     logging.debug("running git_fetch")
     git.git_fetch()
-    git.git_reset_branch()
 
     branches = (
         args.branches

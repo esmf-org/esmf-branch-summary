@@ -11,3 +11,4 @@ eggs.csv
 .coverage
 summaries.db
 *log
+error_artifacts/
