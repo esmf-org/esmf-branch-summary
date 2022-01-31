@@ -10,7 +10,6 @@ author: Ryan Long <ryan.long@noaa.gov>
 
 import bisect
 import datetime
-import functools
 import hashlib
 import itertools
 import logging
@@ -119,7 +118,6 @@ def to_unique(items: Generator[str, None, None]) -> Generator[str, None, None]:
             yield item
 
 
-@functools.lru_cache
 def get_branch_hashes(
     machine_name, git: Git, branch_name=None
 ) -> Generator[str, None, None]:
