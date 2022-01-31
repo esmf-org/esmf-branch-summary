@@ -16,7 +16,6 @@ import logging
 import os
 import re
 import timeit
-import subprocess
 from collections import OrderedDict
 from typing import Generator, Tuple
 
@@ -87,39 +86,52 @@ def find_files(
     return results
 
 
-def get_last_branch_hash(machine_name, branch_name, git) -> str:
+def get_recent_branch_hashes(
+    machine_name, branch_name, limit, git
+) -> Generator[str, None, None]:
     """Returns the most recent branch on machine_name + branch_name"""
-    result = list(get_branch_hashes(machine_name, git, branch_name))
-    if not result:
-        return ""
-    return result[0]
+    count = 0
+    hashes = get_branch_hashes(machine_name, git, branch_name)
+    while count < limit:
+        try:
+            yield next(hashes)
+        except StopIteration:
+            return
+        count += 1
 
 
-def get_branch_hashes(machine_name, git: Git, branch_name=None):
-    # TODO This is broken, getting the last hash from log...
+class Error(Exception):
+    """Base class for other exceptions"""
+
+
+class HashNotFound(Exception):
+    "Raised when no branch has is found"
+
+
+def to_unique(items: Generator[str, None, None]) -> Generator[str, None, None]:
+    """Returns a list with only unique values, regardles if hashable"""
+    result = []
+    for item in items:
+        if item not in result:
+            result.append(item)
+            yield item
+
+
+def get_branch_hashes(
+    machine_name, git: Git, branch_name=None
+) -> Generator[str, None, None]:
     """Uses git log to determine all hashes for a machine_name/(branch_name)"""
-    try:
+    result = git.git_log(f"origin/{machine_name}")
 
-        result = git.git_log(f"origin/{machine_name}")
-
-        output = result.stdout.split("\n")
-        pattern = r"ESMF.*-\S{8}"
-        if branch_name is not None:
-            output = (line for line in output if branch_name in line)
-        hashes = list(
-            re.findall(pattern, item)[0]
-            for item in output
-            if len(re.findall(pattern, item)) > 0
-        )
-        result = []
-        for _hash in hashes:
-            if _hash not in result:
-                result.append(_hash)
-        return result
-
-    except subprocess.CalledProcessError as e:
-        logging.error(e.stderr)
-        return ""
+    _stdout = result.stdout.split("\n")
+    pattern = r"ESMF.*-\S{8}"
+    if branch_name is not None:
+        _stdout = (line for line in _stdout if branch_name in line)
+    return to_unique(
+        re.findall(pattern, item)[0]
+        for item in _stdout
+        if len(re.findall(pattern, item)) > 0
+    )
 
 
 def is_build_passing(file_path):
@@ -390,58 +402,17 @@ def fetch_summary_file_contents(_hash, gateway):
     return results
 
 
-def main():
-    """main point of execution"""
+def get_cwd(repopath, branch_name):
+    CWD = os.path.abspath(os.path.join(repopath, strip_branch_prefix(branch_name)))
+    if not os.path.exists(CWD):
+        logging.debug("creating directory %s", CWD)
+        os.mkdir(CWD)
+    return CWD
 
-    starttime = timeit.default_timer()
-    args = ViewCLI().get_args()
-    handle_logging(args)
 
-    logging.info("starting...")
-    logging.debug("Args are : %s", args)
+def generate_summaries(machine_name, branch_name, git, qty, CWD, repopath, gateway):
+    for _hash in get_recent_branch_hashes(machine_name, branch_name, qty, git):
 
-    gateway = Archive("./summaries.db")
-    repopath = os.path.abspath(args.repo_path)
-    git = Git(repopath)
-
-    logging.debug("running git_fetch")
-    git.git_fetch()
-    git.git_reset_branch()
-
-    branches = (
-        args.branches
-        if args.branches is not None
-        else git.git_snapshot("https://github.com/esmf-org/esmf")
-    )
-
-    logging.info(
-        "itterating over %s branches in %s machines",
-        len(branches),
-        len(MACHINE_NAME_LIST),
-    )
-
-    for machine_name, branch_name in generate_permutations(MACHINE_NAME_LIST, branches):
-        logging.info(
-            "starting summary for branch %s on machine %s", branch_name, machine_name
-        )
-        logging.debug("git checking out branch: %s [%s]", branch_name, machine_name)
-        git.git_checkout(machine_name)
-
-        CWD = os.path.abspath(os.path.join(repopath, strip_branch_prefix(branch_name)))
-        if not os.path.exists(CWD):
-            logging.debug("creating directory %s", CWD)
-            os.mkdir(CWD)
-        os.chdir(CWD)
-
-        logging.debug("finding last branch hash")
-        _hash = get_last_branch_hash(machine_name, branch_name, git)
-        if _hash == "":
-            logging.info(
-                "could not find last hash for branch: %s on %s, SKIPPING",
-                branch_name,
-                machine_name,
-            )
-            continue
         logging.debug("last branch hash is %s", _hash)
 
         logging.debug("fetching matching logs to determine build pass/fail")
@@ -477,8 +448,55 @@ def main():
         logging.debug("pushing to summary")
         git.git_push("origin", "summary")
         logging.info(
-            "finished summary for branch %s on machine %s", branch_name, machine_name
+            "finished summary for B:%s M: %s [%s]", branch_name, machine_name, _hash
         )
+
+
+def main():
+    """main point of execution"""
+
+    starttime = timeit.default_timer()
+    args = ViewCLI().get_args()
+    handle_logging(args)
+
+    logging.info("starting...")
+    logging.debug("Args are : %s", args)
+
+    gateway = Archive("./summaries.db")
+    repopath = os.path.abspath(args.repo_path)
+    git = Git(repopath)
+
+    logging.debug("running git_fetch")
+    git.git_fetch()
+    git.git_reset_branch()
+
+    branches = (
+        args.branches
+        if args.branches is not None
+        else git.git_snapshot("https://github.com/esmf-org/esmf")
+    )
+
+    logging.info(
+        "itterating over %s branches in %s machines",
+        len(branches),
+        len(MACHINE_NAME_LIST),
+    )
+
+    for machine_name, branch_name in generate_permutations(MACHINE_NAME_LIST, branches):
+        logging.info(
+            "starting summaries for branch %s on machine %s", branch_name, machine_name
+        )
+        logging.debug("git checking out branch: %s [%s]", branch_name, machine_name)
+        git.git_checkout(machine_name)
+        CWD = get_cwd(repopath, branch_name)
+        os.chdir(CWD)
+        generate_summaries(
+            machine_name, branch_name, git, args.number, CWD, repopath, gateway
+        )
+        logging.info(
+            "finished summaries for branch %s on machine %s", branch_name, machine_name
+        )
+
     logging.info("finished in %s", (timeit.default_timer() - starttime) / 60)
 
 
