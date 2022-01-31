@@ -1,3 +1,5 @@
+#!/glade/u/apps/ch/opt/python/3.7.9/gnu/9.1.0/bin/python3
+
 """
 ESMF Branch Summary Tool
 
@@ -485,9 +487,6 @@ def main():
     signal.signal(signal.SIGINT, signal_handler)
 
     ROOT_CWD = os.getcwd()
-
-    print("Press Ctrl+C")
-    signal.pause()
 
     starttime = timeit.default_timer()
     args = ViewCLI().get_args()
