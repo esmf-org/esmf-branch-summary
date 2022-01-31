@@ -37,8 +37,7 @@ class Git:
                 if any((warning for warning in WARNINGS if warning in error.stderr)):
                     logging.warning(error.stderr)
                 else:
-                    logging.error(error.stderr)
-                    raise
+                    raise GitError(error.stderr) from error
             return subprocess.CompletedProcess(
                 returncode=0, args="", stdout=error.stdout
             )
@@ -178,3 +177,12 @@ class Git:
     def git_log(self, branch_name) -> subprocess.CompletedProcess:
         """git log --format=%B <branch_name>"""
         return self._command_safe(["git", "log", "--format=%B", f"{branch_name}"])
+
+
+class Error(Exception):
+    """Base error class"""
+
+
+class GitError(Error):
+    def __init__(self, message: str):
+        super().__init__(message)
