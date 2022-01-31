@@ -1,3 +1,3 @@
 test:
-	python3 esmf_branch_summary.py ../esmf-test-artifacts/ -b 'develop' 'jedwards/pio_update' -l debug
+	python3 esmf_branch_summary.py ../esmf-test-artifacts/ -n 10 -l info
 
