@@ -21,6 +21,7 @@ from collections import OrderedDict
 from typing import Generator, Tuple
 
 from tabulate import tabulate
+from compressor import Compressor
 
 from gateway import Archive, SummaryRow
 from git import Git
@@ -156,7 +157,7 @@ def is_build_passing(file_path):
         return is_passing
 
 
-def fetch_test_results(file_path):
+def fetch_test_results(file_path, compressor: Compressor):
     """Fetches test results from file_path and returns them as an ordered dict"""
     _temp = {}
     results = OrderedDict()
@@ -222,6 +223,7 @@ def fetch_test_results(file_path):
                     logging.warning(
                         "No %s test results in file %s", key_cleaned, file_path
                     )
+                    compressor.add(file_path)
     return results
 
 
@@ -358,11 +360,13 @@ def parse_logs_for_build_passing(matching_logs):
     return build_passing_results
 
 
-def compile_test_results(matching_summaries, build_passing_results, branch_name):
+def compile_test_results(
+    matching_summaries, build_passing_results, branch_name, compressor: Compressor
+):
     test_results = []
     for idx, _file in enumerate(matching_summaries):
 
-        result = fetch_test_results(_file)
+        result = fetch_test_results(_file, compressor)
         pass_fail = fetch_build_result(result, build_passing_results)
 
         test_results.append(
@@ -428,9 +432,15 @@ def generate_summaries(machine_name, branch_name, git, qty, CWD, repopath, gatew
         logging.debug("finished reading logs")
 
         logging.debug("reading %d summaries", len(matching_summaries))
-        test_results = compile_test_results(
-            matching_summaries, build_passing_results, branch_name
+        compressor = Compressor(
+            os.path.join(
+                os.getcwd(), f"./{branch_name}-{machine_name}-{_hash}_error_artifacts.tar.gz"
+            )
         )
+        test_results = compile_test_results(
+            matching_summaries, build_passing_results, branch_name, compressor
+        )
+        compressor.close()
         logging.debug("finished reading summaries")
 
         git.git_checkout(branch_name="summary", force=True)
@@ -479,9 +489,10 @@ def main():
     )
 
     logging.info(
-        "itterating over %s branches in %s machines",
+        "itterating over %s branches in %s machines over %s most recent branches",
         len(branches),
         len(MACHINE_NAME_LIST),
+        args.number,
     )
 
     for machine_name, branch_name in generate_permutations(MACHINE_NAME_LIST, branches):
