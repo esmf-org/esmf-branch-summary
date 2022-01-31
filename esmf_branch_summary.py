@@ -15,6 +15,8 @@ import itertools
 import logging
 import os
 import re
+import signal
+import sys
 import timeit
 from collections import OrderedDict
 from typing import Generator, Tuple
@@ -472,10 +474,20 @@ def generate_summaries(
         )
 
 
+def signal_handler(sig, frame):
+    print("Exiting.")
+    sys.exit(0)
+
+
 def main():
+
     """main point of execution"""
+    signal.signal(signal.SIGINT, signal_handler)
 
     ROOT_CWD = os.getcwd()
+
+    print("Press Ctrl+C")
+    signal.pause()
 
     starttime = timeit.default_timer()
     args = ViewCLI().get_args()
