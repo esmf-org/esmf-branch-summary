@@ -322,11 +322,6 @@ def handle_logging(args):
             f"log level given: {args.log}"
             f" -- must be one of: {' | '.join(levels.keys())}"
         )
-    if level is None:
-        raise ValueError(
-            f"log level given: {args.log}"
-            f" -- must be one of: {' | '.join(levels.keys())}"
-        )
     LOG_FORMAT = "%(asctime)s %(name)-12s %(levelname)-8s %(message)s"
     LOG_FORMATTER = logging.Formatter(LOG_FORMAT)
     logging.basicConfig(
