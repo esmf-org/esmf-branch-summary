@@ -145,18 +145,17 @@ def is_build_passing(file_path):
         logging.error("file path %s does not exist", file_path)
         return False
     with open(file_path, "r", encoding="utf-8") as _file:
-        is_passing = False
         lines_read = []
         for idx, line in enumerate(reversed(list(_file))):
             if "ESMF library built successfully" in line:
-                is_passing = True
+                return True
             lines_read.append(line)
             # Check the last 5 lines only for speed
-            if idx > 5:
-                break
+            if idx > 25:
         logging.debug("build result not found, see output below:")
         logging.debug("\n".join(lines_read))
-        return is_passing
+                break
+        return False
 
 
 def fetch_test_results(file_path, compressor: Compressor):
