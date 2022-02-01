@@ -490,7 +490,7 @@ def main():
     logging.info("starting...")
     logging.debug("Args are : %s", args)
 
-    gateway = Archive("./summaries.db")
+    gateway = Archive(os.path.join(ROOT_CWD, "./summaries.db"))
     repopath = os.path.abspath(args.repo_path)
     git = Git(repopath)
 
