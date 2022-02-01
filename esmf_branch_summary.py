@@ -387,7 +387,7 @@ def generate_summary_file_contents(_hash, gateway):
 
 def generate_link(**kwds):
     """generates a link to github to jump to the _hash passed in"""
-    return f"[artifacts](https://github.com/esmf-org/esmf-test-artifacts/tree/{kwds['host'].replace('/', '_')}/{kwds['branch']}/{kwds['host'].replace('/', '_')}/{kwds['compiler_type']}/{kwds['compiler_version']}/{kwds['o_g']}/{kwds['mpi_type']}/{kwds['mpi_version']})"
+    return f"[artifacts](https://github.com/esmf-org/esmf-test-artifacts/tree/{kwds['host'].replace('/', '_')}/{kwds['branch']}/{kwds['host'].replace('/', '_')}/{kwds['compiler_type']}/{kwds['compiler_version']}/{kwds['o_g']}/{kwds['mpi_type'].lower()}/{kwds['mpi_version']})"
 
 
 def strip_branch_prefix(value):
