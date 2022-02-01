@@ -1,5 +1,6 @@
 # ESMF Branch Summary Tool
-
+[![CodeFactor](https://www.codefactor.io/repository/github/ryanlong1004/esmf-branch-summary/badge)](https://www.codefactor.io/repository/github/ryanlong1004/esmf-branch-summary)
+[![PyPi Version](https://img.shields.io/pypi/v/new_project.svg)](https://pypi.org/project/new_project/)
 ESMF Branch Summary Tool automate summarizing ESMF Framework test results across
 multiple permutations.
 
@@ -38,9 +39,6 @@ Continuing from our example above in which we invoked the tool with only the ```
 
 
 ## Installation
-
-[![CodeFactor](https://www.codefactor.io/repository/github/ryanlong1004/esmf-branch-summary/badge)](https://www.codefactor.io/repository/github/ryanlong1004/esmf-branch-summary)
-[![PyPi Version](https://img.shields.io/pypi/v/new_project.svg)](https://pypi.org/project/new_project/)
 
 Use the package manager [pip](https://pip.pypa.io/en/stable/) to install esmf-branch-summary tool.
 
