@@ -249,7 +249,7 @@ def write_file(data, file_path):
 def generate_id(row, _hash):
     """generate an md5 hash from unique row data"""
     return hashlib.md5(
-        f"{row['branch']}{row['host']}{row['os']}{row['compiler_type']}{row['compiler_version']}{row['mpi_type']}{row['mpi_version']}{_hash}".encode()
+        f"{row['branch']}{row['host']}{row['os']}{row['compiler_type']}{row['compiler_version']}{row['mpi_type']}{row['mpi_version']['o_g']}{_hash}".encode()
     ).hexdigest()
 
 
