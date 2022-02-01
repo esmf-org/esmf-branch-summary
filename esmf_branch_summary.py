@@ -402,6 +402,7 @@ def fetch_summary_file_contents(_hash, gateway):
     for item in gateway.fetch_rows_by_hash(_hash):
         row = item._asdict()
         row["hash"] = generate_link(**item._asdict())
+        row["build_passed"] = "Pass" if row["build_passed"] == 1 else "Fail"
         results.append(dict(**row))
     return results
 
