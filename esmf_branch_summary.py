@@ -455,8 +455,14 @@ def generate_summaries(
 
         git.git_checkout(branch_name="summary", force=True)
         if len(test_results) > 0:
+            if not os.path.exists(os.path.join(repopath, branch_name.replace("/", "_"))):
+                os.mkdir(os.path.join(repopath, branch_name.replace("/", "_")))
             output_file_path = os.path.abspath(
-                os.path.join(repopath, f"{_hash.replace('/', '_')}.md")
+                os.path.join(
+                    repopath,
+                    branch_name.replace("/", "_"),
+                    f"{_hash.replace('/', '_')}.md",
+                )
             )
             write_archive(test_results, _hash, gateway)
             write_file(fetch_summary_file_contents(_hash, gateway), output_file_path)
