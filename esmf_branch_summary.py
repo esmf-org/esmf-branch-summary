@@ -152,8 +152,8 @@ def is_build_passing(file_path):
             lines_read.append(line)
             # Check the last 5 lines only for speed
             if idx > 25:
-        logging.debug("build result not found, see output below:")
-        logging.debug("\n".join(lines_read))
+                logging.debug("build result not found, see output below:")
+                logging.debug("\n".join(lines_read))
                 break
         return False
 
@@ -392,7 +392,7 @@ def generate_summary_file_contents(_hash, gateway):
 
 def generate_link(**kwds):
     """generates a link to github to jump to the _hash passed in"""
-    return f"[artifacts](https://github.com/ryanlong1004/esmf-test-artifacts/tree/{kwds['host'].replace('/', '_')}/{kwds['branch']}/{kwds['host'].replace('/', '_')}/{kwds['compiler_type']}/{kwds['compiler_version']}/{kwds['o_g']}/{kwds['mpi_type']}/{kwds['mpi_version']})"
+    return f"[artifacts](https://github.com/esmf-org/esmf-test-artifacts/tree/{kwds['host'].replace('/', '_')}/{kwds['branch']}/{kwds['host'].replace('/', '_')}/{kwds['compiler_type']}/{kwds['compiler_version']}/{kwds['o_g']}/{kwds['mpi_type']}/{kwds['mpi_version']})"
 
 
 def strip_branch_prefix(value):
