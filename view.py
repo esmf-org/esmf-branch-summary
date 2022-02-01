@@ -40,8 +40,8 @@ class ViewCLI:
         parser.add_argument(
             "-l",
             "--log",
-            default="warning",
-            help=("Provide logging level. " "Example --log debug', default='warning'"),
+            default="info",
+            help=("Provide logging level. " "Example --log debug', default='info'"),
         )
 
         return parser.parse_args()
