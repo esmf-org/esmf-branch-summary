@@ -22,6 +22,7 @@ import sys
 import timeit
 from collections import OrderedDict
 from typing import Generator, Tuple
+import pathlib
 
 from tabulate import tabulate
 from compressor import Compressor
@@ -481,7 +482,7 @@ def main():
     """main point of execution"""
     signal.signal(signal.SIGINT, signal_handler)
 
-    ROOT_CWD = os.getcwd()
+    ROOT_CWD = pathlib.Path(__file__).parent.resolve()
 
     starttime = timeit.default_timer()
     args = ViewCLI().get_args()
@@ -493,7 +494,7 @@ def main():
     archive_path = os.path.join(ROOT_CWD, "summaries.db")
     logging.debug("archive path is %s", archive_path)
     gateway = Archive(archive_path)
-    
+
     repopath = os.path.abspath(args.repo_path)
     git = Git(repopath)
 
