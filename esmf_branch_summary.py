@@ -455,9 +455,6 @@ def generate_summaries(
 
         git.git_checkout(branch_name="summary", force=True)
         if len(test_results) > 0:
-            output_path = os.path.abspath(os.path.join(branch_name.replace("/", "_")))
-            if not os.path.exists(output_path):
-                os.makedirs(output_path)
             output_file_path = os.path.abspath(
                 os.path.join(repopath, f"{_hash.replace('/', '_')}.md")
             )
