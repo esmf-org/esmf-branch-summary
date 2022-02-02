@@ -1,6 +1,7 @@
 import sqlite3
 from collections import namedtuple
 from typing import List
+import abc
 
 
 SummaryRow = namedtuple(
@@ -14,7 +15,19 @@ SummaryRowFormatted = namedtuple(
 )
 
 
-class Archive:
+class Database(abc.ABC):
+    @abc.abstractmethod
+    def create_table(self):
+        raise NotImplementedError
+
+    def insert_rows(self):
+        raise NotImplementedError
+
+    def fetch_rows_by_hash(self):
+        raise NotImplementedError
+
+
+class Archive(Database):
     def __init__(self, db_path):
         self.con = sqlite3.connect(db_path)
 

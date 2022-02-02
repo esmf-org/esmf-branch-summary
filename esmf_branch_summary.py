@@ -11,7 +11,9 @@ author: Ryan Long <ryan.long@noaa.gov>
 
 
 import bisect
+import collections
 import datetime
+import functools
 import hashlib
 import itertools
 import logging
@@ -21,13 +23,13 @@ import signal
 import sys
 import timeit
 from collections import OrderedDict
-from typing import Generator, Tuple
+from typing import Generator, List, Tuple
 import pathlib
 
 from tabulate import tabulate
 from compressor import Compressor
 
-from gateway import Archive, SummaryRow
+from gateway import Archive, Database, SummaryRow
 from git import Git
 from view import ViewCLI
 
@@ -427,25 +429,95 @@ def get_compressor(tar_path, branch_name, machine_name, _hash) -> Compressor:
     )
 
 
+class Compass:
+    def __init__(self, _root: pathlib.Path, repopath: pathlib.Path):
+        self.root = _root
+        self.repopath = repopath
+
+    @property
+    def archive_path(self):
+        return os.path.join(self.root, "summaries.db")
+
+    @classmethod
+    def from_path(cls, root: pathlib.Path, repopath: pathlib.Path):
+        """root usually __file__"""
+        return Compass(pathlib.Path(root).parent.resolve(), repopath)
+
+
+Job = collections.namedtuple("Job", ["machine_name", "branch_name", "qty"])
+
+
+class JobProcessor:
+    def __init__(self, db: Database, git: Git, compass: Compass, branches: List[str]):
+        self.db = db
+        self.git = git
+        self.compass = compass
+        self.jobs = []
+        self._branches = branches
+
+    def add_job(self, job: Job):
+        self.jobs.append(job)
+
+    @property
+    def branches(self):
+        self.update_repo()
+        if self._branches is False:
+            self._branches = self.git.git_snapshot("https://github.com/esmf-org/esmf")
+        return self._branches
+
+    def update_repo(self):
+        return self.git.git_fetch()
+
+    def run_job(self, job: Job):
+        self.git.git_checkout(job.machine_name)
+        os.chdir(self.compass.root)
+        generate_summaries(
+            job.machine_name,
+            job.branch_name,
+            self.git,
+            job.qty,
+            self.db,
+            self.compass
+            
+        )
+        logging.info(
+            "finished summaries for branch %s on machine %s",
+            job.branch_name,
+            job.machine_name,
+        )
+
+    def run(self):
+        for job in self.jobs:
+            self.run_job(job)
+
+
 def generate_summaries(
-    machine_name, branch_name, git, qty, CWD, repopath, gateway, ROOT_CWD
+    machine_name,
+    branch_name,
+    git,
+    qty,
+    gateway,
+    compass: Compass,
 ):
     for _hash in get_recent_branch_hashes(machine_name, branch_name, qty, git):
 
+        repopath = str(compass.repopath)
+        rootpath = str(compass.root)
+        
         logging.debug("last branch hash is %s", _hash)
 
         logging.debug("fetching matching logs to determine build pass/fail")
-        matching_logs = get_matching_logs(CWD, _hash)
+        matching_logs = get_matching_logs(rootpath, _hash)
 
         logging.debug("fetching matching summary files to extract test results")
-        matching_summaries = get_matching_summaries(CWD, _hash)
+        matching_summaries = get_matching_summaries(str(compass.repopath), _hash)
 
         logging.debug("reading %s logs", len(matching_logs))
         build_passing_results = parse_logs_for_build_passing(matching_logs)
         logging.debug("finished reading logs")
 
         logging.debug("reading %d summaries", len(matching_summaries))
-        tar_path = os.path.join(ROOT_CWD, "error_artifacts")
+        tar_path = os.path.join(rootpath, "error_artifacts")
         compressor = get_compressor(tar_path, branch_name, machine_name, _hash)
         test_results = compile_test_results(
             matching_summaries, build_passing_results, branch_name, compressor
@@ -455,7 +527,9 @@ def generate_summaries(
 
         git.git_checkout(branch_name="summary", force=True)
         if len(test_results) > 0:
-            if not os.path.exists(os.path.join(repopath, branch_name.replace("/", "_"))):
+            if not os.path.exists(
+                os.path.join(repopath, branch_name.replace("/", "_"))
+            ):
                 os.mkdir(os.path.join(repopath, branch_name.replace("/", "_")))
             output_file_path = os.path.abspath(
                 os.path.join(
@@ -490,24 +564,24 @@ def main():
     """main point of execution"""
     signal.signal(signal.SIGINT, signal_handler)
 
-    ROOT_CWD = pathlib.Path(__file__).parent.resolve()
-
     starttime = timeit.default_timer()
     args = ViewCLI().get_args()
-    handle_logging(args)
-
     logging.info("starting...")
     logging.debug("Args are : %s", args)
 
-    archive_path = os.path.join(ROOT_CWD, "summaries.db")
-    logging.debug("archive path is %s", archive_path)
-    gateway = Archive(archive_path)
+    handle_logging(args)
 
-    repopath = os.path.abspath(args.repo_path)
-    git = Git(repopath)
+    compass = Compass.from_path(
+        root=pathlib.Path(__file__),
+        repopath=pathlib.Path(os.path.abspath(args.repo_path)),
+    )
+    db = Archive(compass.archive_path)
+    git = Git(str(compass.root))
+    processor = JobProcessor(db, git, compass, args.branches)
+
+    logging.debug("archive path is %s", compass.archive_path)
 
     logging.debug("running git_fetch")
-    git.git_fetch()
 
     branches = (
         args.branches
@@ -537,8 +611,8 @@ def main():
             args.number,
             CWD,
             repopath,
-            gateway,
-            ROOT_CWD,
+            db,
+            compass.root,
         )
         logging.info(
             "finished summaries for branch %s on machine %s", branch_name, machine_name
