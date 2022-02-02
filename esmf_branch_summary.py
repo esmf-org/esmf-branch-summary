@@ -455,7 +455,9 @@ def generate_summaries(
 
         git.git_checkout(branch_name="summary", force=True)
         if len(test_results) > 0:
-            if not os.path.exists(os.path.join(repopath, branch_name.replace("/", "_"))):
+            if not os.path.exists(
+                os.path.join(repopath, branch_name.replace("/", "_"))
+            ):
                 os.mkdir(os.path.join(repopath, branch_name.replace("/", "_")))
             output_file_path = os.path.abspath(
                 os.path.join(
@@ -468,7 +470,7 @@ def generate_summaries(
             write_file(fetch_summary_file_contents(_hash, gateway), output_file_path)
 
             logging.debug("adding all modified files in summary")
-            git.git_add()
+            git.git_add(output_file_path)
 
             logging.debug("committing to %s", "summary")
             git.git_commit(generate_commit_message(branch_name, _hash))
