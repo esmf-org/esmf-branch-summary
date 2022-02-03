@@ -22,6 +22,8 @@ Job = collections.namedtuple("Job", ["machine_name", "branch_name", "qty"])
 
 
 class JobProcessor:
+    """aggregates and summarizes processing jobs"""
+
     REPO_URL = "https://github.com/esmf-org/esmf"
 
     def __init__(
@@ -39,16 +41,15 @@ class JobProcessor:
 
     @property
     def branches(self):
+        """return branches to be summarized"""
         if not self._branches:
             self._update_repo()
             self._branches = self.gateway.git.snapshot(self.REPO_URL)
         return self._branches
 
     def branches_sanitized(self) -> Generator[str, None, None]:
+        """returns a list of branches with illegal characters substituted"""
         return (sanitize_branch_name(branch) for branch in self.branches)
-
-    def _update_repo(self):
-        return self.gateway.git.fetch()
 
     @property
     def jobs(self) -> Generator[Job, None, None]:
@@ -102,19 +103,21 @@ class JobProcessor:
             if len(re.findall(pattern, item)) > 0
         )
 
+    def _update_repo(self):
+        return self.gateway.git.fetch()
+
     def write_archive(self, data, _hash):
         """writes the provided data to the archive"""
         self.gateway.archive.create_table()
         self.gateway.archive.insert_rows(data, _hash)
 
     def generate_summary(self, _hash, branch_name):
-        _hash = sanitize_branch_name(_hash)
-        rootpath = str(self.gateway.compass.root)
+        _hash = sanitize_branch_name(_hash)  # jobs responsibility to sanitize, not user
 
         logging.debug("last branch hash is %s", _hash)
 
         logging.debug("fetching matching logs to determine build pass/fail")
-        matching_logs = get_matching_logs(rootpath, _hash)
+        matching_logs = get_matching_logs(self.gateway.compass.repopath, _hash)
 
         logging.debug("fetching matching summary files to extract test results")
         matching_summaries = get_matching_summaries(
@@ -122,7 +125,7 @@ class JobProcessor:
         )
 
         logging.debug("reading %s logs", len(matching_logs))
-        build_passing_results = parse_logs_for_build_passing(matching_logs)
+        build_passing_results = extract_build_passing_results(matching_logs)
         logging.debug("finished reading logs")
 
         logging.debug("reading %d summaries", len(matching_summaries))
@@ -156,7 +159,7 @@ class JobProcessor:
             )
 
             logging.debug("reading %s logs", len(matching_logs))
-            build_passing_results = parse_logs_for_build_passing(matching_logs)
+            build_passing_results = extract_build_passing_results(matching_logs)
             logging.debug("finished reading logs")
 
             logging.debug("reading %d summaries", len(matching_summaries))
@@ -203,8 +206,6 @@ class JobProcessor:
 
     def fetch_summary_file_contents(self, _hash: str):
         """fetches the contents to create a summary file based on _hash"""
-        print(_hash)
-        print(type(_hash))
         results = []
         for item in self.gateway.archive.fetch_rows_by_hash(_hash):
             row = item._asdict()
@@ -312,7 +313,7 @@ def find_files(
     return results
 
 
-def parse_logs_for_build_passing(matching_logs):
+def extract_build_passing_results(matching_logs):
     build_passing_results = []
     for idx, _file in enumerate(matching_logs):
         build_passing_results.append(
