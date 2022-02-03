@@ -1,6 +1,4 @@
 import os, pathlib
-
-import functools
 import logging
 
 logging.getLogger(__name__)

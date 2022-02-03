@@ -22,10 +22,10 @@ class Database(abc.ABC):
     def create_table(self):
         raise NotImplementedError
 
-    def insert_rows(self):
+    def insert_rows(self, data: List[Any], _hash):
         raise NotImplementedError
 
-    def fetch_rows_by_hash(self):
+    def fetch_rows_by_hash(self, _hash):
         raise NotImplementedError
 
 
@@ -42,7 +42,7 @@ class Archive(Database):
         self.con.commit()
 
     def insert_rows(self, data: List[Any], _hash):
-        rows = toSummaryRows(data, _hash, modified=datetime.datetime.now())
+        rows = to_summary_rows(data, _hash, modified=datetime.datetime.now())
         cur = self.con.cursor()
         cur.executemany(
             "INSERT OR REPLACE INTO summaries VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
@@ -59,14 +59,14 @@ class Archive(Database):
         return (SummaryRowFormatted(*item) for item in cur.fetchall())
 
 
-def toSummaryRow(item, _hash, modified):
+def to_summary_row(item, _hash, modified):
     return SummaryRow(
         **item, hash=_hash, modified=modified, id=generate_id(item, _hash)
     )
 
 
-def toSummaryRows(data, _hash, modified):
-    return (toSummaryRow(item, _hash, modified) for item in data)
+def to_summary_rows(data, _hash, modified):
+    return (to_summary_row(item, _hash, modified) for item in data)
 
 
 def generate_id(item, _hash):

@@ -77,7 +77,7 @@ BranchSummaryGateway = collections.namedtuple(
 )
 
 
-def signal_handler(sig, frame):
+def signal_handler(_, __):
     print("Exiting.")
     sys.exit(0)
 
