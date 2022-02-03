@@ -5,12 +5,15 @@ logging.getLogger(__name__)
 
 
 class Compass:
+    """keeps track of important directories in the file structure"""
+
     def __init__(self, _root: pathlib.Path, repopath: pathlib.Path):
         self.root = _root
         self.repopath = repopath
 
     @property
     def archive_path(self):
+        """where the local database file is written to"""
         return os.path.join(self.root, "summaries.db")
 
     @classmethod
@@ -19,12 +22,13 @@ class Compass:
         return Compass(pathlib.Path(root).parent.resolve(), repopath)
 
     def get_branch_path(self, branch_name):
-        return mkdir_if_not_exists(
+        """returns the absolute path of branch_name"""
+        return _mkdir_if_not_exists(
             os.path.abspath(os.path.join(self.repopath, branch_name))
         )
 
 
-def mkdir_if_not_exists(_path):
+def _mkdir_if_not_exists(_path):
     if not os.path.exists(_path):
         os.mkdir(_path)
     return _path

@@ -7,6 +7,8 @@ from typing import Any, List, Union
 class Git:
     """Encapsulate Git functionality"""
 
+    WARNINGS = ["not something we can merge"]
+
     def __init__(self, repopath: str = os.getcwd()):
         self.repopath = repopath
 
@@ -18,7 +20,6 @@ class Git:
 
         https://stackoverflow.com/questions/4917871/does-git-return-specific-return-error-codes
         """
-        WARNINGS = ["not something we can merge"]
 
         cwd = self.repopath if cwd is None else cwd
         cmd = list(cmd)
@@ -34,7 +35,9 @@ class Git:
         except subprocess.CalledProcessError as error:
             logging.info(error.stdout)
             if error.stderr:
-                if any((warning for warning in WARNINGS if warning in error.stderr)):
+                if any(
+                    (warning for warning in self.WARNINGS if warning in error.stderr)
+                ):
                     logging.warning(error.stderr)
                 else:
                     raise GitError(error.stderr) from error

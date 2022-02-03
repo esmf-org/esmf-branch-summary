@@ -63,6 +63,7 @@ class JobProcessor:
         for job in self.jobs:
             os.chdir(self.gateway.compass.repopath)
             self.generate_summaries(job)
+            self.gateway.git.push("origin", "summary")
             logging.info(
                 "finished summaries for branch %s on machine %s",
                 job.branch_name,
@@ -102,8 +103,33 @@ class JobProcessor:
         )
 
     def write_archive(self, data, _hash):
+        """writes the provided data to the archive"""
         self.gateway.archive.create_table()
         self.gateway.archive.insert_rows(data, _hash)
+
+    def generate_summary(self, _hash, branch_name):
+        _hash = sanitize_branch_name(_hash)
+        rootpath = str(self.gateway.compass.root)
+
+        logging.debug("last branch hash is %s", _hash)
+
+        logging.debug("fetching matching logs to determine build pass/fail")
+        matching_logs = get_matching_logs(rootpath, _hash)
+
+        logging.debug("fetching matching summary files to extract test results")
+        matching_summaries = get_matching_summaries(
+            str(self.gateway.compass.repopath), _hash
+        )
+
+        logging.debug("reading %s logs", len(matching_logs))
+        build_passing_results = parse_logs_for_build_passing(matching_logs)
+        logging.debug("finished reading logs")
+
+        logging.debug("reading %d summaries", len(matching_summaries))
+
+        return compile_test_results(
+            matching_summaries, build_passing_results, branch_name
+        )
 
     def generate_summaries(self, job: Job):
         self.gateway.git.checkout(job.machine_name)
@@ -113,6 +139,7 @@ class JobProcessor:
         for _hash in self.get_recent_branch_hashes(
             job.machine_name, job.branch_name, job.qty
         ):
+            self.generate_summary(_hash, job.branch_name)
 
             _hash = sanitize_branch_name(_hash)
             repopath = str(self.gateway.compass.repopath)
@@ -153,11 +180,9 @@ class JobProcessor:
                         f"{_hash.replace('/', '_')}.md",
                     )
                 )
-                self.gateway.archive.write_archive(
-                    test_results, _hash, self.gateway.archive
-                )
+                self.gateway.archive.insert_rows(test_results, _hash)
                 self.write_file(
-                    self.fetch_summary_file_contents(_hash),
+                    _hash,
                     output_file_path,
                 )
 
@@ -168,7 +193,7 @@ class JobProcessor:
                 self.gateway.git.commit(generate_commit_message(job.branch_name, _hash))
 
             logging.debug("pushing to summary")
-            self.gateway.git.push("origin", "summary")
+
             logging.info(
                 "finished summary for B:%s M: %s [%s]",
                 job.branch_name,
@@ -178,6 +203,8 @@ class JobProcessor:
 
     def fetch_summary_file_contents(self, _hash: str):
         """fetches the contents to create a summary file based on _hash"""
+        print(_hash)
+        print(type(_hash))
         results = []
         for item in self.gateway.archive.fetch_rows_by_hash(_hash):
             row = item._asdict()
