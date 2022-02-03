@@ -7,6 +7,8 @@ from typing import Any, List, Union
 class Git:
     """Encapsulate Git functionality"""
 
+    WARNINGS = ["not something we can merge"]
+
     def __init__(self, repopath: str = os.getcwd()):
         self.repopath = repopath
 
@@ -18,7 +20,6 @@ class Git:
 
         https://stackoverflow.com/questions/4917871/does-git-return-specific-return-error-codes
         """
-        WARNINGS = ["not something we can merge"]
 
         cwd = self.repopath if cwd is None else cwd
         cmd = list(cmd)
@@ -34,7 +35,9 @@ class Git:
         except subprocess.CalledProcessError as error:
             logging.info(error.stdout)
             if error.stderr:
-                if any((warning for warning in WARNINGS if warning in error.stderr)):
+                if any(
+                    (warning for warning in self.WARNINGS if warning in error.stderr)
+                ):
                     logging.warning(error.stderr)
                 else:
                     raise GitError(error.stderr) from error
@@ -42,11 +45,11 @@ class Git:
                 returncode=0, args="", stdout=error.stdout
             )
 
-    def git_reset_branch(self) -> subprocess.CompletedProcess:
+    def reset_branch(self) -> subprocess.CompletedProcess:
         """git checkout ."""
         return self._command_safe(["git", "checkout", "."], self.repopath)
 
-    def git_list_all_branches(self, url=None) -> List[str]:
+    def list_all_branches(self, url=None) -> List[str]:
         """
         git branch -r
         git ls-remote --heads --refs <url>
@@ -66,7 +69,7 @@ class Git:
             ).stdout.split("\n")
         ]
 
-    def git_snapshot(self, url) -> List[Any]:
+    def snapshot(self, url) -> List[Any]:
         """Returns a list of most recent hashes per branch"""
         return [
             item.split("\t")[1].replace("refs/heads/", "")
@@ -77,7 +80,7 @@ class Git:
             if len(item) > 0
         ]
 
-    def git_show(self, branch, path_spec) -> subprocess.CompletedProcess:
+    def show(self, branch, path_spec) -> subprocess.CompletedProcess:
         """git show <branch>:<path_spec>"""
         return self._command_safe(
             [
@@ -88,11 +91,11 @@ class Git:
             self.repopath,
         )
 
-    def git_fetch(self) -> subprocess.CompletedProcess:
+    def fetch(self) -> subprocess.CompletedProcess:
         """git fetch"""
         return self._command_safe(["git", "fetch"], self.repopath)
 
-    def git_add(self, _file_path=None) -> subprocess.CompletedProcess:
+    def add(self, _file_path=None) -> subprocess.CompletedProcess:
         """
         git add --all
         git add <_file_path>
@@ -102,7 +105,7 @@ class Git:
             cmd = ["git", "add", _file_path]
         return self._command_safe(cmd, self.repopath)
 
-    def git_checkout(
+    def checkout(
         self, branch_name, path_spec=None, local_path=None, force=False
     ) -> subprocess.CompletedProcess:
         """
@@ -125,19 +128,17 @@ class Git:
                 logging.info("%s does not exist; force flag is %s", branch_name, force)
         return self._command_safe(cmd, self.repopath)
 
-    def git_commit(self, message) -> subprocess.CompletedProcess:
+    def commit(self, message) -> subprocess.CompletedProcess:
         """git commit -m {message}"""
         return self._command_safe(
             ["git", "commit", "-m", f"'{message}'"], self.repopath
         )
 
-    def git_status(self) -> subprocess.CompletedProcess:
+    def status(self) -> subprocess.CompletedProcess:
         """git status"""
         return self._command_safe(["git", "status"], self.repopath)
 
-    def git_pull(
-        self, destination="origin", branch=None
-    ) -> subprocess.CompletedProcess:
+    def pull(self, destination="origin", branch=None) -> subprocess.CompletedProcess:
         """
         git pull <destination>
         git pull <destination> <branch>
@@ -148,9 +149,7 @@ class Git:
             cmd.append(branch)
         return self._command_safe(cmd, self.repopath)
 
-    def git_push(
-        self, destination="origin", branch=None
-    ) -> subprocess.CompletedProcess:
+    def push(self, destination="origin", branch=None) -> subprocess.CompletedProcess:
         """
         git push <destination>
         git push <destination> <branch>
@@ -160,21 +159,21 @@ class Git:
             cmd.append(branch)
         return self._command_safe(cmd, self.repopath)
 
-    def git_clone(self, url, target_path) -> subprocess.CompletedProcess:
+    def clone(self, url, target_path) -> subprocess.CompletedProcess:
         """git clone <url> <target_path>"""
         cmd = ["git", "clone", url, target_path]
         return self._command_safe(cmd, target_path)
 
-    def git_merge(self, machine_name) -> subprocess.CompletedProcess:
+    def merge(self, machine_name) -> subprocess.CompletedProcess:
         """git merge <machine_name>"""
         cmd = ["git", "merge", f"{machine_name}"]
         return self._command_safe(cmd)
 
-    def git_rebase(self, branch_name) -> subprocess.CompletedProcess:
+    def rebase(self, branch_name) -> subprocess.CompletedProcess:
         """git rebase origin/<branch_name>"""
         return self._command_safe(["git", "rebase", f"origin/{branch_name}"])
 
-    def git_log(self, branch_name) -> subprocess.CompletedProcess:
+    def log(self, branch_name) -> subprocess.CompletedProcess:
         """git log --format=%B <branch_name>"""
         return self._command_safe(["git", "log", "--format=%B", f"{branch_name}"])
 
