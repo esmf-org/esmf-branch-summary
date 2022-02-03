@@ -1,6 +1,8 @@
+import hashlib
+import datetime
 import sqlite3
 from collections import namedtuple
-from typing import List
+from typing import Any, List
 import abc
 
 
@@ -39,7 +41,8 @@ class Archive(Database):
         cur.execute("""CREATE INDEX if not exists summary_id_idx ON Summaries (id)""")
         self.con.commit()
 
-    def insert_rows(self, rows: List[SummaryRow]):
+    def insert_rows(self, data: List[Any], _hash):
+        rows = toSummaryRows(data, _hash, modified=datetime.datetime.now())
         cur = self.con.cursor()
         cur.executemany(
             "INSERT OR REPLACE INTO summaries VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
@@ -54,3 +57,20 @@ class Archive(Database):
             (_hash,),
         )
         return (SummaryRowFormatted(*item) for item in cur.fetchall())
+
+
+def toSummaryRow(item, _hash, modified):
+    return SummaryRow(
+        **item, hash=_hash, modified=modified, id=generate_id(item, _hash)
+    )
+
+
+def toSummaryRows(data, _hash, modified):
+    return (toSummaryRow(item, _hash, modified) for item in data)
+
+
+def generate_id(item, _hash):
+    """generate an md5 hash from unique row data"""
+    return hashlib.md5(
+        f"{item['branch']}{item['host']}{item['os']}{item['compiler_type']}{item['compiler_version']}{item['mpi_type']}{item['mpi_version'].lower()}{item['o_g']}{_hash}".encode()
+    ).hexdigest()
