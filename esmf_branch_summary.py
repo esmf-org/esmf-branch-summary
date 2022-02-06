@@ -78,7 +78,6 @@ def signal_handler(_, __):
 
 
 def main():
-
     """main point of execution"""
     starttime = timeit.default_timer()
     signal.signal(signal.SIGINT, signal_handler)

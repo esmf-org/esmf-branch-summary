@@ -1,7 +1,7 @@
 """
 gateway.py
 
-Database interaction level
+Database interaction layer
 
 author: Ryan Long <ryan.long@noaa.gov>
 """

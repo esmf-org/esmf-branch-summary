@@ -402,10 +402,8 @@ def is_build_passing(file_path: str) -> bool:
                 return True
             lines_read.append(line)
             # Check the last 5 lines only for speed
-            if idx > 5:
-                logging.debug("build result not found, see output below:")
-                logging.debug("file: %s", file_path)
-                logging.debug("\n".join(lines_read))
+            if idx > 200:
+                logging.warning("missing build result %s", file_path)
                 break
         return False
 
