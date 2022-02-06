@@ -98,19 +98,6 @@ class JobProcessor:
             if idx + 1 >= job.qty:
                 return
 
-        # while count < job.qty:
-        #     try:
-        #         yield next(hashes)
-        #     except StopIteration:
-        #         if count == 0:
-        #             logging.warning(
-        #                 "no hash history found for %s [%s]",
-        #                 job.branch_name,
-        #                 job.machine_name,
-        #             )
-        #         return
-        #     count += 1
-
     def get_branch_hashes(self, job) -> List[Any]:
         """Uses git log to determine all unique hashes for a branch_name/[machine_name]"""
         result = self.gateway.git.log(f"origin/{job.machine_name}")
@@ -137,19 +124,17 @@ class JobProcessor:
         """generates summary based on _hash and job and returns the results"""
         logging.debug("last branch hash is %s", _hash)
 
-        logging.debug("fetching matching logs to determine build pass/fail")
         matching_logs = get_matching_logs(self.gateway.compass.repopath, _hash, job)
+        logging.debug("matching logs: %i", len(matching_logs))
 
-        logging.debug("fetching matching summary files to extract test results")
         matching_summaries = get_matching_summaries(
             str(self.gateway.compass.repopath), _hash, job
         )
+        logging.debug("matching summaries: %i", len(matching_summaries))
 
-        logging.debug("reading %s logs", len(matching_logs))
         build_passing_results = extract_build_passing_results(matching_logs)
         logging.debug("finished reading logs")
 
-        logging.debug("reading %d summaries", len(matching_summaries))
         return compile_test_results(matching_summaries, build_passing_results, job)
 
     def send_summary_to_repo(
@@ -294,6 +279,7 @@ def generate_commit_message(branch_name: str, _hash: str) -> str:
 
 def get_matching_logs(cwd: str, _hash: str, job: Job) -> Set[str]:
     """finds the build.log files"""
+    logging.debug("fetching matching logs to determine build pass/fail")
     return set(
         find_files(
             cwd,
@@ -306,6 +292,7 @@ def get_matching_logs(cwd: str, _hash: str, job: Job) -> Set[str]:
 
 def get_matching_summaries(cwd: str, _hash: str, job: Job) -> Set[str]:
     """finds the summary.dat files"""
+    logging.debug("fetching matching summaries to extract test results")
     return set(
         find_files(
             cwd,
@@ -350,7 +337,7 @@ def find_files(
                 search_string in file for search_string in file_name_search_strings
             )
 
-            has_filename_ignore_string = len(file_name_ignore_strings) == 0 or any(
+            has_filename_ignore_string = any(
                 search_string in file for search_string in file_name_ignore_strings
             )
 
@@ -363,6 +350,7 @@ def find_files(
                             for search_string in value_search_strings
                         ):
                             bisect.insort(results, os.path.join(root, file))
+
     return results
 
 
