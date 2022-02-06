@@ -92,32 +92,36 @@ class JobProcessor:
 
     def get_recent_branch_hashes(self, job: Job) -> Generator[str, None, None]:
         """Returns the most recent branch on machine_name + branch_name"""
-        count = 0
-        hashes = self.get_branch_hash_generator(job)
-
-        while count < job.qty:
-            try:
-                yield next(hashes)
-            except StopIteration:
-                if count == 0:
-                    logging.warning(
-                        "no hash history found for %s [%s]",
-                        job.branch_name,
-                        job.machine_name,
-                    )
+        hashes = list(self.get_branch_hashes(job))
+        for idx, _hash in enumerate(hashes):
+            yield _hash
+            if idx + 1 >= job.qty:
                 return
-            count += 1
 
-    def get_branch_hash_generator(self, job) -> Generator[str, None, None]:
+        # while count < job.qty:
+        #     try:
+        #         yield next(hashes)
+        #     except StopIteration:
+        #         if count == 0:
+        #             logging.warning(
+        #                 "no hash history found for %s [%s]",
+        #                 job.branch_name,
+        #                 job.machine_name,
+        #             )
+        #         return
+        #     count += 1
+
+    def get_branch_hashes(self, job) -> List[Any]:
         """Uses git log to determine all unique hashes for a branch_name/[machine_name]"""
         result = self.gateway.git.log(f"origin/{job.machine_name}")
 
         pattern = r"ESMF.*-\S{8}"
-        _stdout = (
+        _stdout = list(
             line.strip()
             for line in result.stdout.split("\n")
-            if job.branch_name in line
+            if sanitize_branch_name(job.branch_name) in line
         )
+
         return to_unique(
             re.findall(pattern, item)[0]
             for item in _stdout
@@ -219,7 +223,6 @@ class JobProcessor:
         """writes all file types required to disk"""
         data = self.fetch_summary_file_contents(_hash)
 
-        logging.debug("writing files")
         if is_latest is True:
             write_file_latest(data, file_path)
         write_file_md(data, file_path)
@@ -228,6 +231,7 @@ class JobProcessor:
 
 def write_file_md(data: List[Dict[str, str]], file_path: str) -> None:
     """writes markdown file"""
+    logging.debug("writing file md: %s", file_path)
     table = tabulate(data, headers="keys", showindex="always", tablefmt="github")
     with open(file_path + ".md", "w", newline="") as _file:
         _file.write(table)
@@ -235,6 +239,7 @@ def write_file_md(data: List[Dict[str, str]], file_path: str) -> None:
 
 def write_file_csv(data: List[Dict[str, str]], file_path: str) -> None:
     """writes csv file"""
+    logging.debug("writing file csv[%i]: %s", len(data), file_path)
     with open(file_path + ".csv", "w", newline="") as csv_file:
         writer = csv.writer(csv_file, delimiter=",", quoting=csv.QUOTE_MINIMAL)
         writer.writerow(data[0].keys())
@@ -244,6 +249,7 @@ def write_file_csv(data: List[Dict[str, str]], file_path: str) -> None:
 
 def write_file_latest(data: List[Any], file_path: str) -> None:
     """writes the most recent file as -latest.md"""
+    logging.debug("writing file -latest: %s", file_path)
     table = tabulate(data, headers="keys", showindex="always", tablefmt="github")
     last_char_index = file_path.rfind("/")
     latest_file_path = file_path[:last_char_index] + "/-latest.md"
@@ -251,13 +257,13 @@ def write_file_latest(data: List[Any], file_path: str) -> None:
         _file.write(table)
 
 
-def to_unique(items: Generator[str, None, None]) -> Generator[str, None, None]:
+def to_unique(items: Generator[str, None, None]) -> List[Any]:
     """Returns a list with only unique values, regardles if hashable"""
     result = []
     for item in items:
         if item not in result:
             result.append(item)
-            yield item
+    return result
 
 
 def sort_file_summary_content(data: List[Any]) -> List[Any]:
@@ -291,8 +297,8 @@ def get_matching_logs(cwd: str, _hash: str, job: Job) -> Set[str]:
     return set(
         find_files(
             cwd,
-            [_hash.replace("/", "_")],
-            ["build.log", job.branch_name, job.machine_name],
+            [_hash],
+            ["build.log", sanitize_branch_name(job.branch_name), job.machine_name],
             ["module", "python"],
         )
     )
@@ -300,11 +306,12 @@ def get_matching_logs(cwd: str, _hash: str, job: Job) -> Set[str]:
 
 def get_matching_summaries(cwd: str, _hash: str, job: Job) -> Set[str]:
     """finds the summary.dat files"""
+    print(cwd, _hash, job)
     return set(
         find_files(
             cwd,
-            [_hash.replace("/", "_")],
-            ["summary.dat", job.branch_name, job.machine_name],
+            [_hash],
+            ["summary.dat", sanitize_branch_name(job.branch_name), job.machine_name],
         )
     )
 
@@ -340,16 +347,17 @@ def find_files(
         for file in files:
             file = os.path.join(root, file)
 
-            has_filename_search_string = all(
+            has_filename_search_string = len(file_name_search_strings) == 0 or all(
                 search_string in file for search_string in file_name_search_strings
             )
 
-            has_filename_ignore_string = any(
+            has_filename_ignore_string = len(file_name_ignore_strings) == 0 or any(
                 search_string in file for search_string in file_name_ignore_strings
             )
 
             if has_filename_search_string and not has_filename_ignore_string:
                 file_path = os.path.join(root, file)
+                print(file_path)
                 with open(file_path, "r", errors="ignore", encoding="utf-8") as _file:
                     for line in _file.readlines():
                         if any(
@@ -379,7 +387,7 @@ def extract_attributes_from_path(_path: str) -> Dict[str, Any]:
     if len(result) < 14:
         result.insert(-2, "none")
 
-    return {
+    results = {
         "branch": result[-9],
         "host": result[-8],
         "compiler": result[-7],
@@ -388,6 +396,7 @@ def extract_attributes_from_path(_path: str) -> Dict[str, Any]:
         "mpi": result[-4],
         "m_version": result[-3].lower(),
     }
+    return results
 
 
 def is_build_passing(file_path: str) -> bool:
