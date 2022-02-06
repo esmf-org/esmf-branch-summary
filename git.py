@@ -1,3 +1,11 @@
+"""
+git.py
+
+Git CLI interaction layer
+
+author: Ryan Long <ryan.long@noaa.gov>
+"""
+
 import logging
 import os
 import subprocess
@@ -183,5 +191,4 @@ class Error(Exception):
 
 
 class GitError(Error):
-    def __init__(self, message: str):
-        super().__init__(message)
+    """Represents generic Git error"""

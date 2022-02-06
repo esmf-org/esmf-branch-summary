@@ -1,4 +1,13 @@
-import os, pathlib
+"""
+compass.py
+
+Utility class for navigating directories from a root
+
+author: Ryan Long <ryan.long@noaa.gov>
+"""
+
+import os
+import pathlib
 import logging
 
 logging.getLogger(__name__)

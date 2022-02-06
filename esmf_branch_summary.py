@@ -10,8 +10,6 @@ author: Ryan Long <ryan.long@noaa.gov>
 """
 
 
-import collections
-
 import logging
 import os
 import pathlib
@@ -44,6 +42,7 @@ LOG_FORMATTER = logging.Formatter(LOG_FORMAT)
 
 
 def handle_logging(args):
+    """handles logging based on CLI arguments"""
     dir_path = os.path.dirname(os.path.realpath(__file__))
     levels = {
         "critical": logging.CRITICAL,
@@ -72,12 +71,8 @@ def handle_logging(args):
     logging.getLogger("").addHandler(console)
 
 
-BranchSummaryGateway = collections.namedtuple(
-    "BranchSummaryGateway", ["git", "archive", "compass"]
-)
-
-
 def signal_handler(_, __):
+    """run code before exiting on ctrl-c"""
     print("Exiting.")
     sys.exit(0)
 
@@ -85,18 +80,19 @@ def signal_handler(_, __):
 def main():
 
     """main point of execution"""
+    starttime = timeit.default_timer()
     signal.signal(signal.SIGINT, signal_handler)
 
-    starttime = timeit.default_timer()
     args = _view.ViewCLI().get_args()
     handle_logging(args)
+
     logging.info("starting...")
     logging.debug("Args are : %s", args)
 
-    compass = _compass.Compass.from_path(
-        root=pathlib.Path(__file__),
-        repopath=pathlib.Path(os.path.abspath(args.repo_path)),
-    )
+    root = pathlib.Path(__file__)
+    repopath = pathlib.Path(os.path.abspath(args.repo_path))
+
+    compass = _compass.Compass.from_path(root, repopath)
     archive = _gateway.Archive(compass.archive_path)
     git = _git.Git(str(compass.repopath))
 
@@ -104,7 +100,7 @@ def main():
         MACHINE_NAME_LIST,
         args.branches,
         args.number,
-        BranchSummaryGateway(git, archive, compass),
+        _job.BranchSummaryGateway(git, archive, compass),
     )
     logging.info(
         "itterating over %s branches in %s machines over %s most recent branches",
@@ -113,7 +109,6 @@ def main():
         args.number,
     )
     processor.run_jobs()
-
     logging.info("finished in %s", (timeit.default_timer() - starttime) / 60)
 
 
