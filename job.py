@@ -306,7 +306,6 @@ def get_matching_logs(cwd: str, _hash: str, job: Job) -> Set[str]:
 
 def get_matching_summaries(cwd: str, _hash: str, job: Job) -> Set[str]:
     """finds the summary.dat files"""
-    print(cwd, _hash, job)
     return set(
         find_files(
             cwd,
@@ -357,7 +356,6 @@ def find_files(
 
             if has_filename_search_string and not has_filename_ignore_string:
                 file_path = os.path.join(root, file)
-                print(file_path)
                 with open(file_path, "r", errors="ignore", encoding="utf-8") as _file:
                     for line in _file.readlines():
                         if any(
