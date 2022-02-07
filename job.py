@@ -16,6 +16,7 @@ import os
 import re
 import bisect
 import csv
+import subprocess
 from typing import Any, Dict, Generator, List, Set, Tuple
 
 from tabulate import tabulate
@@ -120,6 +121,21 @@ class JobProcessor:
         self.gateway.archive.create_table()
         self.gateway.archive.insert_rows(data, _hash)
 
+    def _verify_matches(self, matching_summaries, matching_logs, _hash):
+        if not matching_summaries or not matching_logs:
+            results = subprocess.run(
+                ["grep", "-r", "-n", "-w", ".", "-e", _hash],
+                cwd=self.gateway.compass.repopath,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                encoding="utf-8",
+            )
+            if results.stdout != "":
+                logging.error(
+                    "could not verify matches, grep returned %i",
+                    len(results.stdout.splitlines()),
+                )
+
     def generate_summary(self, _hash, job: Job) -> List[str]:
         """generates summary based on _hash and job and returns the results"""
         logging.debug("last branch hash is %s", _hash)
@@ -130,6 +146,8 @@ class JobProcessor:
         matching_summaries = get_matching_summaries(
             str(self.gateway.compass.repopath), _hash, job
         )
+
+        self._verify_matches(matching_summaries, matching_logs, _hash)
         logging.debug("matching summaries: %i", len(matching_summaries))
 
         build_passing_results = extract_build_passing_results(matching_logs)
@@ -425,16 +443,24 @@ def fetch_test_results(file_path: str) -> Dict[str, Any]:
     results = collections.OrderedDict()
     with open(file_path, "r", encoding="utf-8") as _file:
         for line in _file:
+            # Build for = gfortran_10.3.0_mpich3_g_develop, mpi version 8.1.7 on acorn esmf_os: Linux
             if "Build for" in line:
                 line_cleaned = line.split("=", 1)[1].strip()
                 group1, group2 = line_cleaned.split(",")
+
+                (
+                    group1,
+                    group2,
+                ) = line_cleaned.split(",")
+
                 (
                     _temp["compiler"],
                     _temp["c_version"],
                     _temp["mpi"],
                     _temp["o_g"],
-                    _temp["branch"],
-                ) = group1.strip().split("_")[:5]
+                ) = group1.strip().split("_")[0:4]
+
+                (_temp["branch"],) = group1.strip().split("_", 4)[4:]
 
                 (
                     _,
