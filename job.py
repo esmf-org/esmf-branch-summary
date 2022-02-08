@@ -16,6 +16,7 @@ import os
 import re
 import bisect
 import csv
+import shutil
 import subprocess
 from typing import Any, Dict, Generator, List, Set, Tuple
 
@@ -89,6 +90,10 @@ class JobProcessor:
                 job.machine_name,
             )
         logging.debug("pushing to summary")
+        shutil.copyfile(
+            f"{self.gateway.compass.root}/esmf-branch-summary.log",
+            f"{self.gateway.compass.repopath}/esmf-branch-summary.log",
+        )
         self.gateway.git.push("origin", "summary")
 
     def get_recent_branch_hashes(self, job: Job) -> Generator[str, None, None]:
@@ -177,6 +182,7 @@ class JobProcessor:
         logging.debug("writing files %s", output_file_path_prefix)
         self.write_files(_hash, output_file_path_prefix, is_latest)
 
+        logging.debug("copying log file to repo")
         logging.debug("adding all modified files in summary")
         self.gateway.git.add()
 
