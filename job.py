@@ -99,6 +99,7 @@ class JobProcessor:
             f"{self.gateway.compass.repopath}/summaries.db",
         )
         self.gateway.git.add()
+        self.gateway.git.commit("updating test artifacts")
         self.gateway.git.push("origin", "summary")
 
     def get_recent_branch_hashes(self, job: Job) -> Generator[str, None, None]:
