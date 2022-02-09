@@ -15,6 +15,7 @@ import os
 import pathlib
 import signal
 import sys
+import tempfile
 import timeit
 
 
@@ -79,6 +80,8 @@ def signal_handler(_, __):
 
 def main():
     """main point of execution"""
+    REPO_URL = "git@github.com:esmf-org/esmf-test-artifacts.git"
+
     starttime = timeit.default_timer()
     signal.signal(signal.SIGINT, signal_handler)
 
@@ -89,26 +92,29 @@ def main():
     logging.debug("Args are : %s", args)
 
     root = pathlib.Path(__file__)
-    repopath = pathlib.Path(os.path.abspath(args.repo_path))
 
-    compass = _compass.Compass.from_path(root, repopath)
-    archive = _gateway.Archive(compass.archive_path)
-    git = _git.Git(str(compass.repopath))
+    with tempfile.TemporaryDirectory() as tmpdirname:
+        repopath = pathlib.Path(os.path.abspath(tmpdirname))
+        compass = _compass.Compass.from_path(root, repopath)
+        archive = _gateway.Archive(compass.archive_path)
+        git = _git.Git(str(compass.repopath))
+        logging.debug("cloning into %s into %s", REPO_URL, tmpdirname)
+        git.clone(REPO_URL, tmpdirname)
 
-    processor = _job.JobProcessor(
-        MACHINE_NAME_LIST,
-        args.branches,
-        args.number,
-        _job.BranchSummaryGateway(git, archive, compass),
-    )
-    logging.info(
-        "itterating over %s branches in %s machines over %s most recent branches",
-        len(args.branches),
-        len(MACHINE_NAME_LIST),
-        args.number,
-    )
-    processor.run_jobs()
-    logging.info("finished in %s", (timeit.default_timer() - starttime) / 60)
+        processor = _job.JobProcessor(
+            MACHINE_NAME_LIST,
+            args.branches,
+            args.number,
+            _job.BranchSummaryGateway(git, archive, compass),
+        )
+        logging.info(
+            "itterating over %s branches in %s machines over %s most recent branches",
+            len(args.branches),
+            len(MACHINE_NAME_LIST),
+            args.number,
+        )
+        processor.run_jobs()
+        logging.info("finished in %s", (timeit.default_timer() - starttime) / 60)
 
 
 if __name__ == "__main__":
