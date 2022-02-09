@@ -90,6 +90,7 @@ class JobProcessor:
                 job.machine_name,
             )
         logging.debug("pushing to summary")
+        self.gateway.git.add()
         shutil.copyfile(
             f"{self.gateway.compass.root}/esmf-branch-summary.log",
             f"{self.gateway.compass.repopath}/esmf-branch-summary.log",
