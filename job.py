@@ -90,11 +90,15 @@ class JobProcessor:
                 job.machine_name,
             )
         logging.debug("pushing to summary")
-        self.gateway.git.add()
         shutil.copyfile(
             f"{self.gateway.compass.root}/esmf-branch-summary.log",
             f"{self.gateway.compass.repopath}/esmf-branch-summary.log",
         )
+        shutil.copyfile(
+            f"{self.gateway.compass.root}/summaries.db",
+            f"{self.gateway.compass.repopath}/summaries.db",
+        )
+        self.gateway.git.add()
         self.gateway.git.push("origin", "summary")
 
     def get_recent_branch_hashes(self, job: Job) -> Generator[str, None, None]:
