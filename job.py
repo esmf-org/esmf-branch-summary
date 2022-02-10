@@ -104,28 +104,11 @@ class JobProcessor:
 
     def get_recent_branch_hashes(self, job: Job) -> Generator[str, None, None]:
         """Returns the most recent branch on machine_name + branch_name"""
-        hashes = list(self.get_branch_hashes(job))
+        hashes = list(get_branch_hashes(job, self.gateway.git))
         for idx, _hash in enumerate(hashes):
             yield _hash
             if idx + 1 >= job.qty:
                 return
-
-    def get_branch_hashes(self, job) -> List[Any]:
-        """Uses git log to determine all unique hashes for a branch_name/[machine_name]"""
-        result = self.gateway.git.log(f"origin/{job.machine_name}")
-
-        pattern = r"ESMF.*-\S{8}"
-        _stdout = list(
-            line.strip()
-            for line in result.stdout.split("\n")
-            if sanitize_branch_name(job.branch_name) in line
-        )
-
-        return to_unique(
-            re.findall(pattern, item)[0]
-            for item in _stdout
-            if len(re.findall(pattern, item)) > 0
-        )
 
     def write_archive(self, data, _hash):
         """writes the provided data to the archive"""
@@ -287,6 +270,7 @@ def to_unique(items: Generator[str, None, None]) -> List[Any]:
     result = []
     for item in items:
         if item not in result:
+            print(item)
             result.append(item)
     return result
 
@@ -505,32 +489,34 @@ def fetch_test_results(file_path: str) -> Dict[str, Any]:
                 results["os"] = _temp["os"]
 
             if "test results" in line:
+
                 key, value = line.split("\t", 1)
                 key_cleaned = key.split(" ", 1)[0]
 
                 try:
-                    pass_, fail_ = value.split("\t", 1)
+                    value.replace("PASS", "").replace("FAIL", "").replace(
+                        "\n", ""
+                    ).strip()
+                    pass_, fail_ = value.split(" ", 1)
                     pass_ = (
-                        pass_.replace("\n", "")
+                        int(pass_.replace("\n", "").strip())
                         # .replace("-1", "queued")
-                        .strip().split(" ")[1]
                     )
                     fail_ = (
-                        fail_.replace("\n", "")
+                        int(fail_.replace("\n", "").strip())
                         # .replace("-1", "queued")
-                        .strip().split(" ")[1]
                     )
                     results[f"{key_cleaned}_pass"] = pass_
-                    results[f"{key_cleaned}_fail"] = fail_
                     results[f"{key_cleaned}_fail"] = fail_
 
                 except ValueError as _:
-                    pass_, fail_ = "fail", "fail"
-                    results[f"{key_cleaned}_pass"] = pass_
-                    results[f"{key_cleaned}_fail"] = fail_
-                    logging.warning(
-                        "No %s test results in file %s", key_cleaned, file_path
+                    logging.error(
+                        "found no numeric %s test results using default [%s]",
+                        key_cleaned,
+                        file_path,
                     )
+                    results[f"{key_cleaned}_pass"] = "fail"
+                    results[f"{key_cleaned}_fail"] = "fail"
 
     return results
 
@@ -558,9 +544,27 @@ def generate_link(**kwds) -> str:
     return f"[artifacts](https://github.com/esmf-org/esmf-test-artifacts/tree/{kwds['host'].replace('/', '_')}/{kwds['branch'].replace('/', '_')}/{kwds['host'].replace('/', '_')}/{kwds['compiler']}/{kwds['c_version']}/{kwds['o_g']}/{kwds['mpi']}/{kwds['m_version'].lower()})"
 
 
+def get_branch_hashes(job, git) -> List[Any]:
+    """Uses git log to determine all unique hashes for a branch_name/[machine_name]"""
+    result = git.log(f"origin/{job.machine_name}")
+
+    pattern = r"ESMF.*-\S{8}"
+    _stdout = list(
+        line.strip()
+        for line in result.stdout.split("\n")
+        if sanitize_branch_name(job.branch_name) in line and job.machine_name in line
+    )
+
+    return to_unique(
+        re.findall(pattern, item)[0]
+        for item in _stdout
+        if len(re.findall(pattern, item)) > 0
+    )
+
+
 class Error(Exception):
     """Base class for other exceptions"""
 
 
-class HashNotFound(Exception):
+class HashNotFoundError(Error):
     "Raised when no branch has is found"
