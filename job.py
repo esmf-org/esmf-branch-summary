@@ -266,11 +266,16 @@ def write_file_latest(data: List[Any], file_path: str) -> None:
 
 
 def to_unique(items: Generator[str, None, None]) -> List[Any]:
-    """Returns a list with only unique values, regardles if hashable"""
+    """Returns a list with only unique values, regardles if hashable
+
+    This will reverse the order of the list as a side affect.
+    That behavior is what we want though its shadowed by the
+    implementation
+    """
+
     result = []
     for item in items:
         if item not in result:
-            print(item)
             result.append(item)
     return result
 
