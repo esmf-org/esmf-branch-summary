@@ -142,7 +142,7 @@ class JobProcessor:
                     "-w",
                     ".",
                     "--exclude=esmf-branch-summary.log",
-                    "--exclude-dir={.git}",
+                    "--exclude-dir=.git",
                     "-e",
                     _hash,
                 ],
