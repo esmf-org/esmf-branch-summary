@@ -496,13 +496,16 @@ def fetch_test_results(file_path: str) -> Dict[str, Any]:
             if "test results" in line:
 
                 key, value = line.split("\t", 1)
-                key_cleaned = key.split(" ", 1)[0]
+                key_cleaned = key.split(None, 1)[0]
 
                 try:
-                    value.replace("PASS", "").replace("FAIL", "").replace(
-                        "\n", ""
-                    ).strip()
-                    pass_, fail_ = value.split(" ", 1)
+                    value = (
+                        value.replace("PASS", "")
+                        .replace("FAIL", "")
+                        .replace("\n", "")
+                        .strip()
+                    )
+                    pass_, fail_ = value.split(None, 1)
                     pass_ = (
                         int(pass_.replace("\n", "").strip())
                         # .replace("-1", "queued")
