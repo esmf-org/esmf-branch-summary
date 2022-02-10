@@ -514,9 +514,10 @@ def fetch_test_results(file_path: str) -> Dict[str, Any]:
                     results[f"{key_cleaned}_pass"] = pass_
                     results[f"{key_cleaned}_fail"] = fail_
 
-                except ValueError as _:
+                except ValueError as e:
+                    logging.error(e)
                     logging.error(
-                        "found no numeric %s test results using default [%s]",
+                        "found no numeric %s test results, setting to fail [%s]",
                         key_cleaned,
                         file_path,
                     )
@@ -564,7 +565,7 @@ def get_branch_hashes(job, git) -> List[Any]:
         re.findall(pattern, item)[0]
         for item in _stdout
         if len(re.findall(pattern, item)) > 0
-    )[:job.qty]
+    )[: job.qty]
 
 
 class Error(Exception):
