@@ -518,8 +518,8 @@ def fetch_test_results(file_path: str) -> Dict[str, Any]:
                     results[f"{key_cleaned}_fail"] = fail_
 
                 except ValueError as e:
-                    logging.error(e)
-                    logging.error(value)
+                    logging.error("message: %s", e)
+                    logging.error("line being parsed: %s", value)
                     logging.error(
                         "found no numeric %s test results, setting to fail [%s]",
                         key_cleaned,
