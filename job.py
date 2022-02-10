@@ -564,7 +564,7 @@ def get_branch_hashes(job, git) -> List[Any]:
         re.findall(pattern, item)[0]
         for item in _stdout
         if len(re.findall(pattern, item)) > 0
-    )
+    )[:job.qty]
 
 
 class Error(Exception):
