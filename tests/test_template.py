@@ -9,6 +9,8 @@ def test_example():
 
 def test_fetch_branches():
     class MockClz:
+        """mock"""
+
         def __init__(self, data):
             self.data = data
 
