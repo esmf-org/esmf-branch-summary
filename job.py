@@ -135,7 +135,17 @@ class JobProcessor:
     def _verify_matches(self, matching_summaries, matching_logs, _hash):
         if not matching_summaries or not matching_logs:
             results = subprocess.run(
-                ["grep", "-r", "-n", "-w", ".", "-e", _hash],
+                [
+                    "grep",
+                    "-r",
+                    "-n",
+                    "-w",
+                    ".",
+                    "--exclude=esmf-branch-summary.log",
+                    "--exclude-dir={.git}",
+                    "-e",
+                    _hash,
+                ],
                 cwd=self.gateway.compass.repopath,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
