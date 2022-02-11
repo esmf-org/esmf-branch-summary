@@ -492,8 +492,9 @@ def fetch_test_results(file_path: str) -> Dict[str, Any]:
                     ) = group2.strip().split(" ")
 
                 except ValueError:
-                    logging.error(group1)
-                    logging.error(group2)
+                    logging.error("group1: ", group1)
+                    logging.error("group2: ", group2)
+                    logging.error("file_path: ", file_path)
                     logging.error("could not split %s on ", line_cleaned)
                     raise
 
