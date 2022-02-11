@@ -459,7 +459,7 @@ def fetch_test_results(file_path: str) -> Dict[str, Any]:
 
     _temp = {}
     results = collections.OrderedDict()
-    with open(file_path, "r") as _file:
+    with open(file_path, "r", encoding="ISO-8859-1") as _file:
         for line in _file.readlines():
             # Build for = gfortran_10.3.0_mpich3_g_develop, mpi version 8.1.7 on acorn esmf_os: Linux
             if "Build for" in line:
@@ -513,7 +513,6 @@ def fetch_test_results(file_path: str) -> Dict[str, Any]:
                     value = clean_value(value)
                     pass_, fail_ = value.split(None, 1)
                     pass_ = int(pass_.strip())
-
                     fail_ = int(fail_.strip())
 
                     if pass_ < 0:
