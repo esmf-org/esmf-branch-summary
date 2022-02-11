@@ -459,13 +459,13 @@ def fetch_test_results(file_path: str) -> Dict[str, Any]:
 
     _temp = {}
     results = collections.OrderedDict()
-    with open(file_path, "r", encoding="ISO-8859-1") as _file:
+    with open(file_path, "r") as _file:
         for line in _file.readlines():
             # Build for = gfortran_10.3.0_mpich3_g_develop, mpi version 8.1.7 on acorn esmf_os: Linux
             if "Build for" in line:
                 line_cleaned = line.split("=", 1)[1].strip()
                 try:
-                    group1, group2 = line_cleaned.split(",")
+                    group1, group2 = line_cleaned.split(",", 1)
                 except ValueError:
                     logging.error("could not split %s on ", line_cleaned)
                     raise
