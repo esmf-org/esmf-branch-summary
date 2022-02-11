@@ -450,6 +450,13 @@ def compile_test_results(
 
 def fetch_test_results(file_path: str) -> Dict[str, Any]:
     """Fetches test results from file_path and returns them as an ordered dict"""
+
+    def clean_value(value):
+        delete_carriage_returns = functools.partial(_replace, "\n", "")
+        return delete_carriage_returns(
+            value.replace("PASS", "").replace("FAIL", "")
+        ).strip()
+
     _temp = {}
     results = collections.OrderedDict()
     with open(file_path, "r", encoding="utf-8") as _file:
@@ -499,32 +506,27 @@ def fetch_test_results(file_path: str) -> Dict[str, Any]:
                 key_cleaned = key.split(None, 1)[0]
 
                 try:
-                    value = (
-                        value.replace("PASS", "")
-                        .replace("FAIL", "")
-                        .replace("\n", "")
-                        .strip()
-                    )
+                    value = clean_value(value)
                     pass_, fail_ = value.split(None, 1)
-                    pass_ = (
-                        int(pass_.replace("\n", "").strip())
-                        # .replace("-1", "queued")
-                    )
-                    fail_ = (
-                        int(fail_.replace("\n", "").strip())
-                        # .replace("-1", "queued")
-                    )
+                    pass_ = int(pass_.strip())
+
+                    fail_ = int(fail_.strip())
+
+                    if pass_ < 0:
+                        pass_ = "queued"
+                    if fail_ < 0:
+                        fail_ = "queued"
                     results[f"{key_cleaned}_pass"] = pass_
                     results[f"{key_cleaned}_fail"] = fail_
 
                 except ValueError as e:
-                    logging.error("message: %s", e)
-                    logging.error("line being parsed: %s", value)
                     logging.error(
                         "found no numeric %s test results, setting to fail [%s]",
                         key_cleaned,
                         file_path,
                     )
+                    logging.error("message: %s", e)
+                    logging.error("line being parsed: %s", value)
                     results[f"{key_cleaned}_pass"] = "fail"
                     results[f"{key_cleaned}_fail"] = "fail"
 
