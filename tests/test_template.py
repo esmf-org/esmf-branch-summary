@@ -1,3 +1,5 @@
+# pylint: skip-file
+
 import job
 import git
 from unittest.mock import MagicMock
