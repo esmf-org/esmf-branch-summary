@@ -464,37 +464,38 @@ def fetch_test_results(file_path: str) -> Dict[str, Any]:
             # Build for = gfortran_10.3.0_mpich3_g_develop, mpi version 8.1.7 on acorn esmf_os: Linux
             if "Build for" in line:
                 line_cleaned = line.split("=", 1)[1].strip()
+                group1, group2 = line_cleaned.split(",", 1)
                 try:
-                    group1, group2 = line_cleaned.split(",", 1)
+
+                    (
+                        group1,
+                        group2,
+                    ) = line_cleaned.split(",", 1)
+
+                    (
+                        _temp["compiler"],
+                        _temp["c_version"],
+                        _temp["mpi"],
+                        _temp["o_g"],
+                    ) = group1.strip().split("_")[0:4]
+
+                    (_temp["branch"],) = group1.strip().split("_", 4)[4:]
+
+                    (
+                        _,
+                        _,
+                        _temp["m_version"],
+                        _,
+                        _temp["host"],
+                        _,
+                        _temp["os"],
+                    ) = group2.strip().split(" ")
+
                 except ValueError:
+                    logging.error(group1)
+                    logging.error(group2)
                     logging.error("could not split %s on ", line_cleaned)
                     raise
-
-                (
-                    group1,
-                    group2,
-                ) = line_cleaned.split(",", 1)
-
-                (
-                    _temp["compiler"],
-                    _temp["c_version"],
-                    _temp["mpi"],
-                    _temp["o_g"],
-                ) = group1.strip().split("_")[0:4]
-
-                (_temp["branch"],) = group1.strip().split("_", 4)[4:]
-
-                logging.error(group1)
-                logging.error(group2)
-                (
-                    _,
-                    _,
-                    _temp["m_version"],
-                    _,
-                    _temp["host"],
-                    _,
-                    _temp["os"],
-                ) = group2.strip().split(" ")
 
                 # Keeps the order of insertion for printing
                 results["branch"] = _temp["branch"]
