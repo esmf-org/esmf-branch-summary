@@ -473,7 +473,7 @@ def fetch_test_results(file_path: str) -> Dict[str, Any]:
                 (
                     group1,
                     group2,
-                ) = line_cleaned.split(",")
+                ) = line_cleaned.split(",", 1)
 
                 (
                     _temp["compiler"],
