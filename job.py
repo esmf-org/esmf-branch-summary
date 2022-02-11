@@ -484,6 +484,8 @@ def fetch_test_results(file_path: str) -> Dict[str, Any]:
 
                 (_temp["branch"],) = group1.strip().split("_", 4)[4:]
 
+                logging.error(group1)
+                logging.error(group2)
                 (
                     _,
                     _,
