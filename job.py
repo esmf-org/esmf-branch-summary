@@ -464,7 +464,10 @@ def fetch_test_results(file_path: str) -> Dict[str, Any]:
             # Build for = gfortran_10.3.0_mpich3_g_develop, mpi version 8.1.7 on acorn esmf_os: Linux
             if "Build for" in line:
                 line_cleaned = line.split("=", 1)[1].strip()
-                group1, group2 = line_cleaned.split(",")
+                try:
+                    group1, group2 = line_cleaned.split(",")
+                except ValueError:
+                    logging.error("could not split %s on ", line_cleaned)
 
                 (
                     group1,
