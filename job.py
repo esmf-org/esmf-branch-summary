@@ -131,6 +131,7 @@ class JobProcessor:
                     _hash,
                 ],
                 cwd=self.gateway.compass.repopath,
+                check=False,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
                 encoding="utf-8",
@@ -151,9 +152,10 @@ class JobProcessor:
         matching_summaries = get_matching_summaries(
             str(self.gateway.compass.repopath), _hash, job
         )
-
-        self._verify_matches(matching_summaries, matching_logs, _hash)
         logging.debug("matching summaries: %i", len(matching_summaries))
+
+        # TODO Remove after sending to prod
+        self._verify_matches(matching_summaries, matching_logs, _hash)
 
         build_passing_results = extract_build_passing_results(matching_logs)
         logging.debug("finished reading logs")
@@ -216,6 +218,7 @@ class JobProcessor:
                     job.machine_name,
                 )
                 continue
+            logging.error(idx, _hash)
             self.send_summary_to_repo(job, summary, _hash, idx == 0)
 
     def fetch_summary_file_contents(self, _hash: str):
@@ -528,13 +531,13 @@ def fetch_test_results(file_path: str) -> Dict[str, Any]:
                     results[f"{key_cleaned}_pass"] = pass_
                     results[f"{key_cleaned}_fail"] = fail_
 
-                except ValueError as e:
+                except ValueError as err:
                     logging.error(
                         "found no numeric %s test results, setting to fail [%s]",
                         key_cleaned,
                         file_path,
                     )
-                    logging.error("message: %s", e)
+                    logging.error("message: %s", err)
                     logging.error("line being parsed: %s", value)
                     results[f"{key_cleaned}_pass"] = "fail"
                     results[f"{key_cleaned}_fail"] = "fail"
