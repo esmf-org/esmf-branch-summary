@@ -79,6 +79,14 @@ class JobProcessor:
             )
         )
 
+    def copy_files_to_repo_path(self, files: List[str]):
+        """copies local files to repopath"""
+        for _file in files:
+            shutil.copyfile(
+                os.path.join(self.gateway.compass.root, _file),
+                os.path.join(self.gateway.compass.repopath, _file),
+            )
+
     def run_jobs(self):
         """runs the instance jobs"""
         for job in self.jobs:
@@ -90,14 +98,7 @@ class JobProcessor:
                 job.machine_name,
             )
         logging.debug("pushing to summary")
-        shutil.copyfile(
-            f"{self.gateway.compass.root}/esmf-branch-summary.log",
-            f"{self.gateway.compass.repopath}/esmf-branch-summary.log",
-        )
-        shutil.copyfile(
-            f"{self.gateway.compass.root}/summaries.db",
-            f"{self.gateway.compass.repopath}/summaries.db",
-        )
+        self.copy_files_to_repo_path(["esmf-branch-summary.log", "summaries.db"])
         self.gateway.git.add()
         self.gateway.git.commit("updating test artifacts")
         self.gateway.git.push("origin", "summary")
