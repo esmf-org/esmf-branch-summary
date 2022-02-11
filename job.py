@@ -314,7 +314,7 @@ def get_matching_logs(cwd: str, _hash: str, job: Job) -> Set[str]:
             cwd,
             [_hash],
             ["build.log", sanitize_branch_name(job.branch_name), job.machine_name],
-            ["module", "python"],
+            ["module", "python", "swp"],
         )
     )
 
@@ -327,6 +327,7 @@ def get_matching_summaries(cwd: str, _hash: str, job: Job) -> Set[str]:
             cwd,
             [_hash],
             ["summary.dat", sanitize_branch_name(job.branch_name), job.machine_name],
+            ["swp"],
         )
     )
 
