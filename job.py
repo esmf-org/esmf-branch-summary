@@ -114,6 +114,7 @@ class JobProcessor:
         self.gateway.archive.insert_rows(data, _hash)
 
     def _verify_matches(self, matching_summaries, matching_logs, _hash):
+        """this method is soley for additional verification and should be removed"""
         if not matching_summaries or not matching_logs:
             results = subprocess.run(
                 [
@@ -450,6 +451,95 @@ def compile_test_results(
     return test_results
 
 
+def extract_build_attributes(line, file_path) -> Dict[str, Any]:
+    """extracs build atrributes when found in file_path"""
+    _temp = {}
+    results = collections.OrderedDict()
+    line_cleaned = line.split("=", 1)[1].strip()
+    group1, group2 = line_cleaned.split(",", 1)
+    try:
+
+        (
+            group1,
+            group2,
+        ) = line_cleaned.split(",", 1)
+
+        (
+            _temp["compiler"],
+            _temp["c_version"],
+            _temp["mpi"],
+            _temp["o_g"],
+        ) = group1.strip().split("_")[0:4]
+
+        (_temp["branch"],) = group1.strip().split("_", 4)[4:]
+
+        (
+            _,
+            _,
+            _temp["m_version"],
+            _,
+            _temp["host"],
+            _,
+            _temp["os"],
+        ) = group2.strip().split(" ")
+
+        # Keeps the order of insertion for printing
+        results["branch"] = _temp["branch"]
+        results["host"] = _temp["host"]
+        results["compiler"] = _temp["compiler"]
+        results["c_version"] = _temp["c_version"]
+        results["mpi"] = _temp["mpi"]
+        results["m_version"] = _temp["m_version"].lower()
+        results["o_g"] = _temp["o_g"]
+        results["os"] = _temp["os"]
+
+        return results
+
+    except ValueError:
+        logging.error("group1: %s", group1)
+        logging.error("group2: %s", group2)
+        logging.error("file_path: %s", file_path)
+        logging.error("could not split %s on ", line_cleaned)
+        raise
+
+
+def extract_test_results(line, file_path, results) -> Dict[str, Any]:
+    """extracts test results in a line of text and appends those values to results"""
+
+    def clean_value(value):
+        delete_carriage_returns = functools.partial(_replace, "\n", "")
+        return delete_carriage_returns(
+            value.replace("PASS", "").replace("FAIL", "")
+        ).strip()
+
+    key, value = line.split("\t", 1)
+    key_cleaned = key.split(None, 1)[0]
+
+    try:
+        value = clean_value(value)
+        pass_, fail_ = value.split(None, 1)
+        pass_ = int(pass_.strip())
+        fail_ = int(fail_.strip())
+
+        if pass_ < 0:
+            pass_ = "queued"
+        if fail_ < 0:
+            fail_ = "queued"
+        results[f"{key_cleaned}_pass"] = pass_
+        results[f"{key_cleaned}_fail"] = fail_
+    except ValueError as err:
+        logging.error(
+            "found no numeric %s test results, setting to fail [%s]",
+            key_cleaned,
+            file_path,
+        )
+        logging.error("message: %s", err)
+        logging.error("line being parsed: %s", value)
+        results[f"{key_cleaned}_pass"] = "fail"
+        results[f"{key_cleaned}_fail"] = "fail"
+    return results
+
+
 def fetch_test_results(file_path: str) -> Dict[str, Any]:
     """Fetches test results from file_path and returns them as an ordered dict"""
 
@@ -459,56 +549,12 @@ def fetch_test_results(file_path: str) -> Dict[str, Any]:
             value.replace("PASS", "").replace("FAIL", "")
         ).strip()
 
-    _temp = {}
-    results = collections.OrderedDict()
     with open(file_path, "r", encoding="ISO-8859-1") as _file:
+        results = {}
         for line in _file.readlines():
             # Build for = gfortran_10.3.0_mpich3_g_develop, mpi version 8.1.7 on acorn esmf_os: Linux
             if "Build for" in line:
-                line_cleaned = line.split("=", 1)[1].strip()
-                group1, group2 = line_cleaned.split(",", 1)
-                try:
-
-                    (
-                        group1,
-                        group2,
-                    ) = line_cleaned.split(",", 1)
-
-                    (
-                        _temp["compiler"],
-                        _temp["c_version"],
-                        _temp["mpi"],
-                        _temp["o_g"],
-                    ) = group1.strip().split("_")[0:4]
-
-                    (_temp["branch"],) = group1.strip().split("_", 4)[4:]
-
-                    (
-                        _,
-                        _,
-                        _temp["m_version"],
-                        _,
-                        _temp["host"],
-                        _,
-                        _temp["os"],
-                    ) = group2.strip().split(" ")
-
-                except ValueError:
-                    logging.error("group1: %s", group1)
-                    logging.error("group2: %s", group2)
-                    logging.error("file_path: %s", file_path)
-                    logging.error("could not split %s on ", line_cleaned)
-                    raise
-
-                # Keeps the order of insertion for printing
-                results["branch"] = _temp["branch"]
-                results["host"] = _temp["host"]
-                results["compiler"] = _temp["compiler"]
-                results["c_version"] = _temp["c_version"]
-                results["mpi"] = _temp["mpi"]
-                results["m_version"] = _temp["m_version"]
-                results["o_g"] = _temp["o_g"]
-                results["os"] = _temp["os"]
+                results = extract_build_attributes(line, file_path)
 
             if "test results" in line:
 
@@ -581,11 +627,3 @@ def get_branch_hashes(job, git) -> List[Any]:
         for item in _stdout
         if len(re.findall(pattern, item)) > 0
     )[: job.qty]
-
-
-class Error(Exception):
-    """Base class for other exceptions"""
-
-
-class HashNotFoundError(Error):
-    "Raised when no branch has is found"
