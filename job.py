@@ -186,7 +186,7 @@ class JobProcessor:
         logging.debug("adding all modified files in summary")
         self.gateway.git.add()
 
-        logging.debug("committing to %s", "summary")
+        logging.debug("committing to summary")
         self.gateway.git.commit(generate_commit_message(job.branch_name, _hash))
 
         logging.info(
@@ -210,7 +210,7 @@ class JobProcessor:
             summary = self.generate_summary(_hash, job)
             if len(summary) == 0:
                 logging.info(
-                    "No summary data found for %s, %s [%s]",
+                    "missing summary data for %s, %s [%s]",
                     _hash,
                     job.branch_name,
                     job.machine_name,
