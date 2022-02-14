@@ -416,7 +416,12 @@ def extract_attributes_from_path(_path: str) -> Dict[str, Any]:
     return results
 
 
-def is_build_passing(file_path: str) -> bool:
+def temp_fix(file_path):
+    """temp fix until all machines pull new code"""
+    return file_path.replace("none/", "")
+
+
+def is_build_passing(file_path: str, is_final: bool = False) -> bool:
     """Determines if the build is passing by scanning file_path"""
     if not os.path.exists(file_path):
         logging.error("file path does not exist [%s]", file_path)
@@ -429,8 +434,13 @@ def is_build_passing(file_path: str) -> bool:
             lines_read.append(line)
             # Check the last 200 lines only for speed
             if idx > 200:
+                logging.warning(
+                    "[%s] exists is %s", file_path, os.path.exists(file_path)
+                )
                 logging.warning("no build result found in file [%s]", file_path)
-                break
+                if not is_final: #gross
+                    return is_build_passing(temp_fix(file_path), is_final=True)
+
         return False
 
 
