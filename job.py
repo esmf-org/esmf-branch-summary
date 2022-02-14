@@ -215,8 +215,8 @@ class JobProcessor:
                     job.branch_name,
                     job.machine_name,
                 )
+                logging.error(idx, _hash)
                 continue
-            logging.error(idx, _hash)
             self.send_summary_to_repo(job, summary, _hash, idx == 0)
 
     def fetch_summary_file_contents(self, _hash: str):
