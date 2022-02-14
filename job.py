@@ -215,7 +215,6 @@ class JobProcessor:
                     job.branch_name,
                     job.machine_name,
                 )
-                logging.error(idx, _hash)
                 continue
             self.send_summary_to_repo(job, summary, _hash, idx == 0)
 
