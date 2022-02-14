@@ -1,9 +1,6 @@
 """
-ESMF Branch Summary Tool
-
-Collection of utilities to search, aggregate, and process
-repository data into summary files while also interacting
-with the repository via calls to the CLI
+Represents A Job, being all the attribtues, rules, and excutions in order
+to get a summary results from a repository of test artifacts.
 
 author: Ryan Long <ryan.long@noaa.gov>
 """
