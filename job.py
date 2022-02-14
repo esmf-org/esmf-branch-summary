@@ -419,7 +419,7 @@ def extract_attributes_from_path(_path: str) -> Dict[str, Any]:
 def is_build_passing(file_path: str) -> bool:
     """Determines if the build is passing by scanning file_path"""
     if not os.path.exists(file_path):
-        logging.error("file path %s does not exist", file_path)
+        logging.error("file path does not exist [%s]", file_path)
         return False
     with open(file_path, "r", encoding="utf-8") as _file:
         lines_read = []
@@ -427,9 +427,9 @@ def is_build_passing(file_path: str) -> bool:
             if "ESMF library built successfully" in line:
                 return True
             lines_read.append(line)
-            # Check the last 5 lines only for speed
+            # Check the last 200 lines only for speed
             if idx > 200:
-                logging.warning("missing build result %s", file_path)
+                logging.warning("no build result found in file [%s]", file_path)
                 break
         return False
 
