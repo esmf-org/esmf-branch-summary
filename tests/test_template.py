@@ -27,7 +27,7 @@ def test_fetch_branches():
     _git = git.Git()
     _git.log = MagicMock(return_value=clz)
 
-    _job = job.Job(machine_name="cheyenne", branch_name="develop", qty=5)
+    _job = job.JobRequest(machine_name="cheyenne", branch_name="develop", qty=5)
 
     expected = [
         "ESMF_8_3_0_beta_snapshot_06-10-gce27d44",
