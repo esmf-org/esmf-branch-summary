@@ -37,12 +37,11 @@ MACHINE_NAME_LIST = sorted(
     ]
 )
 
-LOG_FORMAT = "%(asctime)s %(name)-12s %(levelname)-8s %(message)s"
-LOG_FORMATTER = logging.Formatter(LOG_FORMAT)
-
 
 def handle_logging(args):
     """handles logging based on CLI arguments"""
+    log_format = "%(asctime)s %(name)-12s %(levelname)-8s %(message)s"
+    log_formatter = logging.Formatter(log_format)
     dir_path = os.path.dirname(os.path.realpath(__file__))
     levels = {
         "critical": logging.CRITICAL,
@@ -61,13 +60,13 @@ def handle_logging(args):
 
     logging.basicConfig(
         level=logging.DEBUG,
-        format=LOG_FORMAT,
+        format=log_format,
         filename=f"{os.path.join(dir_path, 'esmf-branch-summary.log')}",
         filemode="w",
     )
     console = logging.StreamHandler()
     console.setLevel(level)
-    console.setFormatter(LOG_FORMATTER)
+    console.setFormatter(log_formatter)
     logging.getLogger("").addHandler(console)
 
 
