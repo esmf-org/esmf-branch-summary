@@ -30,7 +30,35 @@ BranchSummaryGateway = collections.namedtuple(
     "BranchSummaryGateway", ["git", "archive", "compass"]
 )
 
-Job = collections.namedtuple("Job", ["machine_name", "branch_name", "qty"])
+TestResult = collections.namedtuple(
+    "TestResult",
+    [
+        "branch",
+        "host",
+        "compiler",
+        "c_version",
+        "mpi",
+        "m_version",
+        "o_g",
+        "os",
+        "unit_pass",
+        "unit_fail",
+        "system_pass",
+        "system_fail",
+        "example_pass",
+        "example_fail",
+        "nuopc_pass",
+        "nuopc_fail",
+        "build_passed",
+    ],
+)
+
+JobRequest = collections.namedtuple("JobRequest", ["machine_name", "branch_name", "qty"])
+
+JobAttributes = collections.namedtuple(
+    "JobAttributes",
+    ["branch", "host", "compiler", "c_version", "o_g", "mpi", "m_version"],
+)
 
 
 class JobProcessor:
