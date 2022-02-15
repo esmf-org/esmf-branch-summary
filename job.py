@@ -5,14 +5,14 @@ to get a summary results from a repository of test artifacts.
 author: Ryan Long <ryan.long@noaa.gov>
 """
 
+import bisect
 import collections
+import csv
 import functools
 import itertools
 import logging
 import os
 import re
-import bisect
-import csv
 import shutil
 import subprocess
 from typing import Any, Dict, Generator, List, Set, Tuple
@@ -95,16 +95,16 @@ class JobProcessor:
         return self._branches
 
     @property
-    def jobs(self) -> Generator[Job, None, None]:
+    def jobs(self) -> Generator[JobRequest, None, None]:
         """returns a generator of job to be summarized"""
         return (
-            Job(machine_name, branch_name, self.history_increments)
+            JobRequest(machine_name, branch_name, self.history_increments)
             for machine_name, branch_name in generate_permutations(
                 self.machines, self.branches
             )
         )
 
-    def copy_files_to_repo_path(self, files: List[str]):
+    def copy_files_to_repo_path(self, files: List[str]) -> None:
         """copies local files to repopath"""
         for _file in files:
             shutil.copyfile(
@@ -112,7 +112,7 @@ class JobProcessor:
                 os.path.join(self.gateway.compass.repopath, _file),
             )
 
-    def run_jobs(self):
+    def run_jobs(self) -> None:
         """runs the instance jobs"""
         for job in self.jobs:
             os.chdir(self.gateway.compass.repopath)
@@ -128,7 +128,7 @@ class JobProcessor:
         self.gateway.git.commit("updating test artifacts")
         self.gateway.git.push("origin", "summary")
 
-    def get_recent_branch_hashes(self, job: Job) -> Generator[str, None, None]:
+    def get_recent_branch_hashes(self, job: JobRequest) -> Generator[str, None, None]:
         """Returns the most recent branch on machine_name + branch_name"""
         hashes = list(get_branch_hashes(job, self.gateway.git))
         for idx, _hash in enumerate(hashes):
@@ -136,14 +136,16 @@ class JobProcessor:
             if idx + 1 >= job.qty:
                 return
 
-    def write_archive(self, data, _hash):
+    def write_archive(self, data: List[TestResult], _hash) -> None:
         """writes the provided data to the archive"""
         self.gateway.archive.create_table()
-        self.gateway.archive.insert_rows(data, _hash)
+        self.gateway.archive.insert_rows([item._asdict() for item in data], _hash)
 
-    def _verify_matches(self, matching_summaries, matching_logs, _hash):
+    def _verify_matches(
+        self, matching_summaries: Set[str], matching_logs: Set[str], _hash: str
+    ) -> None:
         """this method is soley for additional verification and should be removed"""
-        if not matching_summaries or not matching_logs:
+        if not matching_summaries and not matching_logs:
             results = subprocess.run(
                 [
                     "grep",
@@ -168,7 +170,7 @@ class JobProcessor:
                     len(results.stdout.splitlines()),
                 )
 
-    def generate_summary(self, _hash, job: Job) -> List[str]:
+    def generate_summary(self, _hash, job: JobRequest) -> List[TestResult]:
         """generates summary based on _hash and job and returns the results"""
         logging.debug("last branch hash is %s", _hash)
 
@@ -186,11 +188,11 @@ class JobProcessor:
         build_passing_results = extract_build_passing_results(matching_logs)
         logging.debug("finished reading logs")
 
-        return compile_test_results(matching_summaries, build_passing_results, job)
+        return compile_test_results(matching_summaries, build_passing_results)
 
     def send_summary_to_repo(
-        self, job: Job, summary: List[Any], _hash: str, is_latest: bool = False
-    ):
+        self, job: JobRequest, summary: List[TestResult], _hash: str, is_latest: bool = False
+    ) -> None:
         """sends the summary based on the job information to the remote repository"""
         logging.debug("checking out summary")
         self.gateway.git.checkout(branch_name="summary", force=True)
@@ -224,7 +226,7 @@ class JobProcessor:
             _hash,
         )
 
-    def generate_summaries(self, job: Job):
+    def generate_summaries(self, job: JobRequest):
         """generates all the summaries for job"""
         logging.info(
             "generating summaries for %s [%s]", job.branch_name, job.machine_name
@@ -335,7 +337,7 @@ def generate_commit_message(branch_name: str, _hash: str) -> str:
     return f"updated summary for hash {_hash} on {branch_name}"
 
 
-def get_matching_logs(cwd: str, _hash: str, job: Job) -> Set[str]:
+def get_matching_logs(cwd: str, _hash: str, job: JobRequest) -> Set[str]:
     """finds the build.log files"""
     logging.debug("fetching matching logs to determine build pass/fail")
     return set(
@@ -348,7 +350,7 @@ def get_matching_logs(cwd: str, _hash: str, job: Job) -> Set[str]:
     )
 
 
-def get_matching_summaries(cwd: str, _hash: str, job: Job) -> Set[str]:
+def get_matching_summaries(cwd: str, _hash: str, job: JobRequest) -> Set[str]:
     """finds the summary.dat files"""
     logging.debug("fetching matching summaries to extract test results")
     return set(
@@ -413,43 +415,23 @@ def find_files(
     return results
 
 
-def extract_build_passing_results(log_paths: Set[str]) -> List[Dict]:
-    """searches through logs to find build_passing results"""
-    build_passing_results = []
-    for _file in log_paths:
-        build_passing_results.append(
-            dict(
-                **extract_attributes_from_path(_file),
-                **{"build_passed": is_build_passing(_file)},
-            )
-        )
-    return build_passing_results
+def extract_build_passing_results(log_paths: Set[str]) -> Dict[JobAttributes, bool]:
+    """searches through logs to find build_passing results
+
+    JobAttributes namedtuple is immutable so it can be used as a dict key
+    """
+    return {fetch_job_attributes(_file): is_build_passing(_file) for _file in log_paths}
 
 
-def extract_attributes_from_path(_path: str) -> Dict[str, Any]:
-    """searches the path for job attributes"""
+def fetch_job_attributes(_path: str) -> JobAttributes:
+    """returns job attributes based on position in path"""
     result = os.path.normpath(_path).split(os.sep)
-    if len(result) < 14:
-        result.insert(-2, "none")
-
-    results = {
-        "branch": result[-9],
-        "host": result[-8],
-        "compiler": result[-7],
-        "c_version": result[-6],
-        "o_g": result[-5],
-        "mpi": result[-4],
-        "m_version": result[-3].lower(),
-    }
-    return results
+    return JobAttributes(
+        *[result[x].lower().replace("out", "") for x in range(-9, -2, 1)]
+    )
 
 
-def temp_fix(file_path):
-    """temp fix until all machines pull new code"""
-    return file_path.replace("none/", "")
-
-
-def is_build_passing(file_path: str, is_final: bool = False) -> bool:
+def is_build_passing(file_path: str) -> bool:
     """Determines if the build is passing by scanning file_path"""
     if not os.path.exists(file_path):
         logging.error("file path does not exist [%s]", file_path)
@@ -462,30 +444,29 @@ def is_build_passing(file_path: str, is_final: bool = False) -> bool:
             lines_read.append(line)
             # Check the last 200 lines only for speed
             if idx > 200:
-                logging.warning(
-                    "[%s] exists is %s", file_path, os.path.exists(file_path)
+                logging.debug(
+                    "success message not found in file [%s]",
+                    file_path,
                 )
-                logging.warning("no build result found in file [%s]", file_path)
-                if not is_final: #gross
-                    return is_build_passing(temp_fix(file_path), is_final=True)
+                return False
 
         return False
 
 
 def compile_test_results(
-    matching_summaries: Set[str], build_passing_results: List[Dict[str, Any]], job: Job
-) -> List[str]:
+    matching_summaries: Set[str],
+    build_passing_results: Dict[JobAttributes, Any],
+) -> List[TestResult]:
     """takes all of the gathered data and returns a list of the results"""
-    test_results = []
-    for _file in matching_summaries:
-
-        test_result = fetch_test_results(_file)
-        build_result = fetch_build_result(test_result, build_passing_results)
-
-        test_results.append(
-            {**test_result, "branch": job.branch_name, "build_passed": build_result}
+    return [
+        TestResult(
+            **fetch_test_results(_file),
+            build_passed=fetch_build_result(
+                fetch_test_results(_file), build_passing_results
+            ),
         )
-    return test_results
+        for _file in matching_summaries
+    ]
 
 
 def extract_build_attributes(line, file_path) -> Dict[str, Any]:
@@ -558,9 +539,9 @@ def extract_test_results(line, file_path, results) -> Dict[str, Any]:
         pass_ = int(pass_.strip())
         fail_ = int(fail_.strip())
 
-        if pass_ < 0:
+        if pass_ == -1:
             pass_ = "queued"
-        if fail_ < 0:
+        if fail_ == -1 :
             fail_ = "queued"
         results[f"{key_cleaned}_pass"] = pass_
         results[f"{key_cleaned}_fail"] = fail_
@@ -625,21 +606,12 @@ def fetch_test_results(file_path: str) -> Dict[str, Any]:
     return results
 
 
-def fetch_build_result(needle: Dict[str, Any], haystack: List[Dict[str, Any]]):
+def fetch_build_result(needle: Dict[str, Any], haystack: Dict[JobAttributes, Any]):
     """searches through they haystack for the needle"""
+    data = {k: needle.get(k, "none").lower() for k in (JobAttributes._fields)}
     try:
-        result = filter(
-            lambda x: x["compiler"].lower() == needle["compiler"].lower()
-            and x["c_version"].lower() == needle["c_version"].lower()
-            and x["mpi"].lower() == needle["mpi"].lower()
-            and x["m_version"].lower() == needle["m_version"].lower()
-            and x["host"].lower() == needle["host"].lower(),
-            haystack,
-        )
-        return list(result)[0]["build_passed"]
-    except IndexError as _:
-        logging.warning("build result not found")
-        logging.debug("needle: %s", needle)
+        return haystack[JobAttributes(**data)]
+    except KeyError:
         return False
 
 
