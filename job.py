@@ -53,7 +53,9 @@ TestResult = collections.namedtuple(
     ],
 )
 
-JobRequest = collections.namedtuple("JobRequest", ["machine_name", "branch_name", "qty"])
+JobRequest = collections.namedtuple(
+    "JobRequest", ["machine_name", "branch_name", "qty"]
+)
 
 JobAttributes = collections.namedtuple(
     "JobAttributes",
@@ -104,6 +106,17 @@ class JobProcessor:
             )
         )
 
+    def branch_path(self, job: JobRequest, force: bool):
+        """returns the branch path in context.  Will create if force is True"""
+        branch_path = os.path.join(
+            self.gateway.compass.repopath,
+            sanitize_branch_name(job.branch_name),
+        )
+        if force and not os.path.exists(branch_path):
+            logging.debug("creating directory %s", branch_path)
+            os.mkdir(branch_path)
+        return branch_path
+
     def copy_files_to_repo_path(self, files: List[str]) -> None:
         """copies local files to repopath"""
         for _file in files:
@@ -138,6 +151,7 @@ class JobProcessor:
 
     def write_archive(self, data: List[TestResult], _hash) -> None:
         """writes the provided data to the archive"""
+        logging.debug("writing archive %s length %i", _hash, len(data))
         self.gateway.archive.create_table()
         self.gateway.archive.insert_rows([item._asdict() for item in data], _hash)
 
@@ -191,28 +205,22 @@ class JobProcessor:
         return compile_test_results(matching_summaries, build_passing_results)
 
     def send_summary_to_repo(
-        self, job: JobRequest, summary: List[TestResult], _hash: str, is_latest: bool = False
+        self,
+        job: JobRequest,
+        summary: List[TestResult],
+        _hash: str,
+        is_latest: bool = False,
     ) -> None:
         """sends the summary based on the job information to the remote repository"""
         logging.debug("checking out summary")
         self.gateway.git.checkout(branch_name="summary", force=True)
-        branch_path = os.path.join(
-            self.gateway.compass.repopath,
-            sanitize_branch_name(job.branch_name),
-        )
-        if not os.path.exists(branch_path):
-            logging.debug("creating directory %s", branch_path)
-            os.mkdir(branch_path)
 
+        branch_path = self.branch_path(job, True)
         output_file_path_prefix = os.path.abspath(os.path.join(branch_path, _hash))
 
-        logging.debug("writing archive %s length %i", _hash, len(summary))
         self.write_archive(summary, _hash)
-
-        logging.debug("writing files %s", output_file_path_prefix)
         self.write_files(_hash, output_file_path_prefix, is_latest)
 
-        logging.debug("copying log file to repo")
         logging.debug("adding all modified files in summary")
         self.gateway.git.add()
 
@@ -260,6 +268,7 @@ class JobProcessor:
 
     def write_files(self, _hash: str, file_path: str, is_latest: bool = False):
         """writes all file types required to disk"""
+        logging.debug("writing files %s", file_path)
         data = self.fetch_summary_file_contents(_hash)
 
         if is_latest is True:
@@ -541,7 +550,7 @@ def extract_test_results(line, file_path, results) -> Dict[str, Any]:
 
         if pass_ == -1:
             pass_ = "queued"
-        if fail_ == -1 :
+        if fail_ == -1:
             fail_ = "queued"
         results[f"{key_cleaned}_pass"] = pass_
         results[f"{key_cleaned}_fail"] = fail_
