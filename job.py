@@ -18,6 +18,7 @@ import subprocess
 from typing import Any, Dict, Generator, List, Set, Tuple
 
 from tabulate import tabulate
+import constants
 
 
 def _replace(old: str, new: str, target: str):
@@ -260,9 +261,13 @@ class JobProcessor:
         """fetches the contents to create a summary file based on _hash"""
         results = []
         for item in self.gateway.archive.fetch_rows_by_hash(_hash):
-            row = item._asdict()
-            row["hash"] = generate_link(**item._asdict())
-            row["build"] = "Pass" if row["build"] == 1 else "Fail"
+            # replace -1 with "pending"
+            row = {
+                k: "pending" if v == constants.QUEUED else v
+                for k, v in item._asdict().items()
+            }
+            row["hash"] = generate_link(**row)
+            row["build"] = "Pass" if row["build"] == constants.PASS else "Fail"
             results.append(dict(**row))
         return sort_file_summary_content(results)
 
@@ -548,10 +553,6 @@ def extract_test_results(line, file_path, results) -> Dict[str, Any]:
         pass_ = int(pass_.strip())
         fail_ = int(fail_.strip())
 
-        if pass_ == -1:
-            pass_ = "queued"
-        if fail_ == -1:
-            fail_ = "queued"
         results[f"{key_cleaned}_pass"] = pass_
         results[f"{key_cleaned}_fail"] = fail_
     except ValueError as err:
@@ -594,10 +595,6 @@ def fetch_test_results(file_path: str) -> Dict[str, Any]:
                     pass_ = int(pass_.strip())
                     fail_ = int(fail_.strip())
 
-                    if pass_ < 0:
-                        pass_ = "queued"
-                    if fail_ < 0:
-                        fail_ = "queued"
                     results[f"{key_cleaned}_pass"] = pass_
                     results[f"{key_cleaned}_fail"] = fail_
 
