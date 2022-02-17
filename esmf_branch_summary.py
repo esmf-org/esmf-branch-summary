@@ -27,13 +27,13 @@ import job as _job
 MACHINE_NAME_LIST = sorted(
     [
         "cheyenne",
-        "hera",
-        "orion",
-        "jet",
-        "gaea",
-        "discover",
-        "chianti",
-        "acorn",
+#        "hera",
+#        "orion",
+#        "jet",
+#        "gaea",
+#        "discover",
+#        "chianti",
+#        "acorn",
     ]
 )
 

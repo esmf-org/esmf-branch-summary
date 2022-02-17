@@ -18,6 +18,7 @@ import subprocess
 from typing import Any, Dict, Generator, List, Set, Tuple
 
 from tabulate import tabulate
+import gateway
 import constants
 
 
@@ -27,9 +28,6 @@ def _replace(old: str, new: str, target: str):
 
 sanitize_branch_name = functools.partial(_replace, "/", "_")
 
-BranchSummaryGateway = collections.namedtuple(
-    "BranchSummaryGateway", ["git", "archive", "compass"]
-)
 
 TestResult = collections.namedtuple(
     "TestResult",
@@ -62,6 +60,15 @@ JobAttributes = collections.namedtuple(
     "JobAttributes",
     ["branch", "host", "compiler", "c_version", "o_g", "mpi", "m_version"],
 )
+
+
+class BranchSummaryGateway:
+    """represents gateways needed"""
+
+    def __init__(self, git, archive, compass):
+        self.git = git
+        self.archive = archive
+        self.compass = compass
 
 
 class JobProcessor:
@@ -205,6 +212,15 @@ class JobProcessor:
 
         return compile_test_results(matching_summaries, build_passing_results)
 
+    def bootstrap_summaries_repo(self):
+        _path = self.gateway.compass.root
+        try:
+            self.gateway.git.clone(
+                "git@github.com:esmf-org/esmf-test-summary.git", _path
+            )
+        except Exception:
+            raise
+
     def send_summary_to_repo(
         self,
         job: JobRequest,
@@ -214,7 +230,10 @@ class JobProcessor:
     ) -> None:
         """sends the summary based on the job information to the remote repository"""
         logging.debug("checking out summary")
-        self.gateway.git.checkout(branch_name="summary", force=True)
+        self.bootstrap_summaries_repo()
+        exit()
+
+        self.gateway.git.checkout(branch_name="main", force=False)
 
         branch_path = self.branch_path(job, True)
         output_file_path_prefix = os.path.abspath(os.path.join(branch_path, _hash))
