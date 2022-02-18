@@ -8,6 +8,7 @@ author: Ryan Long <ryan.long@noaa.gov>
 
 import logging
 import os
+import shutil
 import subprocess
 from typing import Any, List, Union
 
@@ -167,8 +168,11 @@ class Git:
             cmd.append(branch)
         return self._command_safe(cmd, self.repopath)
 
-    def clone(self, url, target_path) -> subprocess.CompletedProcess:
+    def clone(self, url, target_path=None) -> subprocess.CompletedProcess:
         """git clone <url> <target_path>"""
+        if os.path.exists(self.repopath):
+            shutil.rmtree(self.repopath)
+        os.mkdir(self.repopath)
         cmd = ["git", "clone", url, target_path]
         return self._command_safe(cmd, target_path)
 
@@ -184,6 +188,17 @@ class Git:
     def log(self, branch_name) -> subprocess.CompletedProcess:
         """git log --format=%B <branch_name>"""
         return self._command_safe(["git", "log", "--format=%B", f"{branch_name}"])
+
+
+def from_clone(url, _path: str):
+    """creates a Git instance from a url"""
+    temp = Git(_path)
+    if os.path.exists(_path):
+        shutil.rmtree(_path)
+    os.mkdir(_path)
+    temp.clone(url, _path)
+    temp.repopath = os.path.join(_path, "esmf-test-summary")
+    return temp
 
 
 class Error(Exception):

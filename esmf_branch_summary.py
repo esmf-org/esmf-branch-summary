@@ -13,29 +13,52 @@ author: Ryan Long <ryan.long@noaa.gov>
 import logging
 import os
 import pathlib
+import shutil
 import signal
 import sys
+import tempfile
 import timeit
 
 
-import compass as _compass
-import gateway as _gateway
-import git as _git
-import view as _view
-import job as _job
+from src import compass as _compass
+from src import git as _git
+from src import view as _view
+from src import job as _job
+from src import gateway as _gateway
+
 
 MACHINE_NAME_LIST = sorted(
     [
         "cheyenne",
-#        "hera",
-#        "orion",
-#        "jet",
-#        "gaea",
-#        "discover",
-#        "chianti",
-#        "acorn",
+        "hera",
+        "orion",
+        "jet",
+        "gaea",
+        "discover",
+        "chianti",
+        "acorn",
+        "gaffney",
+        "izumi",
+        "koehr",
+        "onyx",
     ]
 )
+
+
+class BranchSummaryGateway:
+    """represents gateways needed"""
+
+    def __init__(
+        self,
+        git_artifacts: _git.Git,
+        git_summaries: _git.Git,
+        archive: _gateway.Database,
+        compass: _compass.Compass,
+    ):
+        self.git_artifacts = git_artifacts
+        self.git_summaries = git_summaries
+        self.archive = archive
+        self.compass = compass
 
 
 def handle_logging(args):
@@ -92,13 +115,20 @@ def main():
 
     compass = _compass.Compass.from_path(root, repopath)
     archive = _gateway.Archive(compass.archive_path)
-    git = _git.Git(str(compass.repopath))
+    git_artifacts = _git.Git(str(compass.repopath))
+    temp_dir = os.path.join(tempfile.gettempdir(), "esmf_branch_summary_space")
+    if os.path.exists(temp_dir):
+        shutil.rmtree(temp_dir)
+    os.mkdir(temp_dir)
+    git_summaries = _git.from_clone(
+        "git@github.com:esmf-org/esmf-test-summary.git", temp_dir
+    )
 
     processor = _job.JobProcessor(
         MACHINE_NAME_LIST,
         args.branches,
         args.number,
-        _job.BranchSummaryGateway(git, archive, compass),
+        BranchSummaryGateway(git_artifacts, git_summaries, archive, compass),
     )
     logging.info(
         "itterating over %s branches in %s machines over %s most recent branches",
