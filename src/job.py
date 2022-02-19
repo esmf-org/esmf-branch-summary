@@ -18,7 +18,8 @@ import subprocess
 from typing import Any, Dict, Generator, List, Set, Tuple
 
 from tabulate import tabulate
-import constants
+
+from src import constants
 
 
 def _replace(old: str, new: str, target: str):
@@ -27,9 +28,6 @@ def _replace(old: str, new: str, target: str):
 
 sanitize_branch_name = functools.partial(_replace, "/", "_")
 
-BranchSummaryGateway = collections.namedtuple(
-    "BranchSummaryGateway", ["git", "archive", "compass"]
-)
 
 TestResult = collections.namedtuple(
     "TestResult",
@@ -74,13 +72,13 @@ class JobProcessor:
         machines: List[str],
         branches: List[str],
         history_increments: int,
-        gateway: BranchSummaryGateway,
+        _gateway,
     ):
 
         self.machines = machines
         self._branches = branches
         self.history_increments = history_increments
-        self.gateway = gateway
+        self.gateway = _gateway
 
     def __iter__(self):
         return (x for x in self.jobs)
@@ -93,8 +91,8 @@ class JobProcessor:
     def branches(self):
         """return branches to be summarized"""
         if not self._branches:
-            self.gateway.git.fetch()
-            self._branches = self.gateway.git.snapshot(self.REPO_URL)
+            self.gateway.git_artifacts.fetch()
+            self._branches = self.gateway.git_artifacts.snapshot(self.REPO_URL)
         return self._branches
 
     @property
@@ -107,10 +105,10 @@ class JobProcessor:
             )
         )
 
-    def branch_path(self, job: JobRequest, force: bool):
+    def branch_path(self, job: JobRequest, _root: str, force: bool):
         """returns the branch path in context.  Will create if force is True"""
         branch_path = os.path.join(
-            self.gateway.compass.repopath,
+            _root,
             sanitize_branch_name(job.branch_name),
         )
         if force and not os.path.exists(branch_path):
@@ -120,14 +118,22 @@ class JobProcessor:
 
     def copy_files_to_repo_path(self, files: List[str]) -> None:
         """copies local files to repopath"""
+
         for _file in files:
             shutil.copyfile(
                 os.path.join(self.gateway.compass.root, _file),
-                os.path.join(self.gateway.compass.repopath, _file),
+                os.path.join(self.gateway.git_summaries.repopath, _file),
             )
 
     def run_jobs(self) -> None:
         """runs the instance jobs"""
+        self.gateway.git_summaries.clone(
+            "git@github.com:esmf-org/esmf-test-summary.git",
+            self.gateway.git_summaries.repopath,
+        )
+        self.gateway.git_summaries.repopath = os.path.join(
+            self.gateway.git_summaries.repopath
+        )
         for job in self.jobs:
             os.chdir(self.gateway.compass.repopath)
             self.generate_summaries(job)
@@ -138,13 +144,13 @@ class JobProcessor:
             )
         logging.debug("pushing to summary")
         self.copy_files_to_repo_path(["esmf-branch-summary.log", "summaries.db"])
-        self.gateway.git.add()
-        self.gateway.git.commit("updating test artifacts")
-        self.gateway.git.push("origin", "summary")
+        self.gateway.git_summaries.add()
+        self.gateway.git_summaries.commit("updating test artifacts")
+        self.gateway.git_summaries.push("origin")
 
     def get_recent_branch_hashes(self, job: JobRequest) -> Generator[str, None, None]:
         """Returns the most recent branch on machine_name + branch_name"""
-        hashes = list(get_branch_hashes(job, self.gateway.git))
+        hashes = list(get_branch_hashes(job, self.gateway.git_artifacts))
         for idx, _hash in enumerate(hashes):
             yield _hash
             if idx + 1 >= job.qty:
@@ -181,15 +187,18 @@ class JobProcessor:
             )
             if results.stdout != "":
                 logging.error(
-                    "could not verify matches, grep returned %i",
+                    "could not verify matches, grep returned %i ...\n[%s]",
                     len(results.stdout.splitlines()),
+                    [x for x in results.stdout.splitlines()[:11]],
                 )
 
     def generate_summary(self, _hash, job: JobRequest) -> List[TestResult]:
         """generates summary based on _hash and job and returns the results"""
         logging.debug("last branch hash is %s", _hash)
 
-        matching_logs = get_matching_logs(self.gateway.compass.repopath, _hash, job)
+        matching_logs = get_matching_logs(
+            str(self.gateway.compass.repopath), _hash, job
+        )
         logging.debug("matching logs: %i", len(matching_logs))
 
         matching_summaries = get_matching_summaries(
@@ -214,19 +223,19 @@ class JobProcessor:
     ) -> None:
         """sends the summary based on the job information to the remote repository"""
         logging.debug("checking out summary")
-        self.gateway.git.checkout(branch_name="summary", force=True)
-
-        branch_path = self.branch_path(job, True)
+        branch_path = self.branch_path(job, self.gateway.git_summaries.repopath, True)
         output_file_path_prefix = os.path.abspath(os.path.join(branch_path, _hash))
 
         self.write_archive(summary, _hash)
         self.write_files(_hash, output_file_path_prefix, is_latest)
 
         logging.debug("adding all modified files in summary")
-        self.gateway.git.add()
+        self.gateway.git_summaries.add()
 
         logging.debug("committing to summary")
-        self.gateway.git.commit(generate_commit_message(job.branch_name, _hash))
+        self.gateway.git_summaries.commit(
+            generate_commit_message(job.branch_name, _hash)
+        )
 
         logging.info(
             "finished summary for B:%s M: %s [%s]",
@@ -241,7 +250,7 @@ class JobProcessor:
             "generating summaries for %s [%s]", job.branch_name, job.machine_name
         )
         logging.debug("checking out %s", job.machine_name)
-        self.gateway.git.checkout(job.machine_name)
+        self.gateway.git_artifacts.checkout(job.machine_name)
         os.chdir(
             self.gateway.compass.get_branch_path(sanitize_branch_name(job.branch_name))
         )
@@ -276,6 +285,10 @@ class JobProcessor:
         logging.debug("writing files %s", file_path)
         data = self.fetch_summary_file_contents(_hash)
 
+        _dir = os.path.dirname(file_path)
+        if not os.path.exists(_dir):
+            os.makedirs(_dir)
+
         if is_latest is True:
             write_file_latest(data, file_path)
         write_file_md(data, file_path)
@@ -286,14 +299,14 @@ def write_file_md(data: List[Dict[str, str]], file_path: str) -> None:
     """writes markdown file"""
     logging.debug("writing file md: %s", file_path)
     table = tabulate(data, headers="keys", showindex="always", tablefmt="github")
-    with open(file_path + ".md", "w", newline="") as _file:
+    with open(file_path + ".md", "w+", newline="") as _file:
         _file.write(table)
 
 
 def write_file_csv(data: List[Dict[str, str]], file_path: str) -> None:
     """writes csv file"""
     logging.debug("writing file csv[%i]: %s", len(data), file_path)
-    with open(file_path + ".csv", "w", newline="") as csv_file:
+    with open(file_path + ".csv", "w+", newline="") as csv_file:
         writer = csv.writer(csv_file, delimiter=",", quoting=csv.QUOTE_MINIMAL)
         writer.writerow(data[0].keys())
         for row in data:
@@ -306,7 +319,7 @@ def write_file_latest(data: List[Any], file_path: str) -> None:
     table = tabulate(data, headers="keys", showindex="always", tablefmt="github")
     last_char_index = file_path.rfind("/")
     latest_file_path = file_path[:last_char_index] + "/-latest.md"
-    with open(latest_file_path, "w", newline="") as _file:
+    with open(latest_file_path, "w+", newline="") as _file:
         _file.write(table)
 
 
