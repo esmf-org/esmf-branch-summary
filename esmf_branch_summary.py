@@ -24,7 +24,7 @@ from src import compass as _compass
 from src import git as _git
 from src import view as _view
 from src import job as _job
-from src import gateway as _gateway
+from src.gateway import summaries as _gateway
 
 
 MACHINE_NAME_LIST = sorted(
@@ -52,7 +52,7 @@ class BranchSummaryGateway:
         self,
         git_artifacts: _git.Git,
         git_summaries: _git.Git,
-        archive: _gateway.Database,
+        archive: _gateway.DatabaseSqlite3,
         compass: _compass.Compass,
     ):
         self.git_artifacts = git_artifacts
@@ -114,7 +114,7 @@ def main():
     repopath = pathlib.Path(os.path.abspath(args.repo_path))
 
     compass = _compass.Compass.from_path(root, repopath)
-    archive = _gateway.Archive(compass.archive_path)
+    archive = _gateway.Summaries(pathlib.Path(compass.archive_path))
     git_artifacts = _git.Git(str(compass.repopath))
     temp_dir = os.path.join(tempfile.gettempdir(), "esmf_branch_summary_space")
     if os.path.exists(temp_dir):
