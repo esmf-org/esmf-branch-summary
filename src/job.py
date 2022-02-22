@@ -15,7 +15,7 @@ import os
 import re
 import shutil
 import subprocess
-from typing import Any, Dict, Generator, List, Set, Tuple
+from typing import Any, Dict, Generator, Iterable, List, MutableSequence, Set, Tuple
 
 from tabulate import tabulate
 
@@ -27,6 +27,56 @@ def _replace(old: str, new: str, target: str):
 
 
 sanitize_branch_name = functools.partial(_replace, "/", "_")
+
+
+class UniqueList(collections.UserList):
+    """maintains order containing only unique values"""
+
+    def __init__(self, data: Iterable):
+        super().__init__(_to_unique(data))
+
+    def append(self, item):
+        if item not in self:
+            super().append(item)
+
+
+def _to_unique(items: Iterable) -> List[Any]:
+    """Returns a list with only unique values, regardles if hashable"""
+    result = []
+    for item in items:
+        if item not in result:
+            result.append(item)
+    return result
+
+
+class Hash(collections.UserString):
+    """contains methods to parse and represent a job hash"""
+
+    PARSE_PATTERNS: List[str] = [r"ESMF_\S*", r"v\S*\.\S*\.\S*"]
+
+    def __init__(self, value: str):
+        self.data = self._parse(value)
+        super().__init__(self.value)
+
+    def __str__(self):
+        return str(self.data)
+
+    @property
+    def value(self):
+        """hash value"""
+        return self.data
+
+    @value.setter
+    def value(self, value):
+        self.data = self._parse(value)
+
+    def _parse(self, value) -> str:
+        for pattern in self.PARSE_PATTERNS:
+            try:
+                return re.findall(pattern, value)[0]
+            except IndexError:
+                continue
+        raise ValueError(f"could not parse [{value}]")
 
 
 TestResult = collections.namedtuple(
@@ -148,9 +198,9 @@ class JobProcessor:
         self.gateway.git_summaries.commit("updating test artifacts")
         self.gateway.git_summaries.push("origin")
 
-    def get_recent_branch_hashes(self, job: JobRequest) -> Generator[str, None, None]:
+    def get_recent_branch_hashes(self, job: JobRequest) -> Generator[Hash, None, None]:
         """Returns the most recent branch on machine_name + branch_name"""
-        hashes = list(get_branch_hashes(job, self.gateway.git_artifacts))
+        hashes = get_branch_hashes(job, self.gateway.git_artifacts)
         for idx, _hash in enumerate(hashes):
             yield _hash
             if idx + 1 >= job.qty:
@@ -160,10 +210,10 @@ class JobProcessor:
         """writes the provided data to the archive"""
         logging.debug("writing archive %s length %i", _hash, len(data))
         self.gateway.archive.create_table()
-        self.gateway.archive.insert_rows([item._asdict() for item in data], _hash)
+        self.gateway.archive.insert_rows([item._asdict() for item in data], str(_hash))
 
     def _verify_matches(
-        self, matching_summaries: Set[str], matching_logs: Set[str], _hash: str
+        self, matching_summaries: Set[str], matching_logs: Set[str], _hash: Hash
     ) -> None:
         """this method is soley for additional verification and should be removed"""
         if not matching_summaries and not matching_logs:
@@ -177,7 +227,7 @@ class JobProcessor:
                     "--exclude=esmf-branch-summary.log",
                     "--exclude-dir=.git",
                     "-e",
-                    _hash,
+                    str(_hash),
                 ],
                 cwd=self.gateway.compass.repopath,
                 check=False,
@@ -228,13 +278,13 @@ class JobProcessor:
         self,
         job: JobRequest,
         summary: List[TestResult],
-        _hash: str,
+        _hash: Hash,
         is_latest: bool = False,
     ) -> None:
         """sends the summary based on the job information to the remote repository"""
         logging.debug("checking out summary")
         branch_path = self.branch_path(job, self.gateway.git_summaries.repopath, True)
-        output_file_path_prefix = os.path.abspath(os.path.join(branch_path, _hash))
+        output_file_path_prefix = os.path.abspath(os.path.join(branch_path, str(_hash)))
 
         self.write_archive(summary, _hash)
         self.write_files(_hash, output_file_path_prefix, is_latest)
@@ -278,7 +328,7 @@ class JobProcessor:
                 continue
             self.send_summary_to_repo(job, summary, _hash, idx == 0)
 
-    def fetch_summary_file_contents(self, _hash: str):
+    def fetch_summary_file_contents(self, _hash: Hash):
         """fetches the contents to create a summary file based on _hash"""
         results = []
         for item in self.gateway.archive.fetch_rows_by_hash(_hash):
@@ -292,7 +342,7 @@ class JobProcessor:
             results.append(dict(**row))
         return sort_file_summary_content(results)
 
-    def write_files(self, _hash: str, file_path: str, is_latest: bool = False):
+    def write_files(self, _hash: Hash, file_path: str, is_latest: bool = False):
         """writes all file types required to disk"""
         logging.debug("writing files %s", file_path)
         data = self.fetch_summary_file_contents(_hash)
@@ -335,21 +385,6 @@ def write_file_latest(data: List[Any], file_path: str) -> None:
         _file.write(table)
 
 
-def to_unique(items: Generator[str, None, None]) -> List[Any]:
-    """Returns a list with only unique values, regardles if hashable
-
-    This will reverse the order of the list as a side affect.
-    That behavior is what we want though its shadowed by the
-    implementation
-    """
-
-    result = []
-    for item in items:
-        if item not in result:
-            result.append(item)
-    return result
-
-
 def sort_file_summary_content(data: List[Any]) -> List[Any]:
     """sorts the summary file contents"""
     return sorted(
@@ -371,7 +406,7 @@ def generate_permutations(
     return (each_permutation for each_permutation in itertools.product(list1, list2))
 
 
-def generate_commit_message(branch_name: str, _hash: str) -> str:
+def generate_commit_message(branch_name: str, _hash: Hash) -> str:
     """canned message for commits"""
     return f"updated summary for hash {_hash} on {branch_name}"
 
@@ -446,7 +481,7 @@ def find_files(
                 with open(file_path, "r", errors="ignore", encoding="utf-8") as _file:
                     for line in _file.readlines():
                         if any(
-                            search_string in line
+                            str(search_string) in line
                             for search_string in value_search_strings
                         ):
                             bisect.insort(results, os.path.join(root, file))
@@ -651,19 +686,12 @@ def generate_link(**kwds) -> str:
     return f"[artifacts](https://github.com/esmf-org/esmf-test-artifacts/tree/{kwds['host'].replace('/', '_')}/{kwds['branch'].replace('/', '_')}/{kwds['host'].replace('/', '_')}/{kwds['compiler']}/{kwds['c_version']}/{kwds['o_g']}/{kwds['mpi']}/{kwds['m_version'].lower()})"
 
 
-def get_branch_hashes(job, git) -> List[Any]:
+def get_branch_hashes(job, git) -> MutableSequence[Any]:
     """Uses git log to determine all unique hashes for a branch_name/[machine_name]"""
     result = git.log(f"origin/{job.machine_name}")
-
-    pattern = r"ESMF.*-\S{8}"
-    _stdout = list(
+    _stdout = [
         line.strip()
         for line in result.stdout.split("\n")
         if sanitize_branch_name(job.branch_name) in line and job.machine_name in line
-    )
-
-    return to_unique(
-        re.findall(pattern, item)[0]
-        for item in _stdout
-        if len(re.findall(pattern, item)) > 0
-    )[: job.qty]
+    ]
+    return UniqueList((Hash(x) for x in _stdout))[: job.qty]
