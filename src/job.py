@@ -200,10 +200,20 @@ class JobProcessor:
             str(self.gateway.compass.repopath), _hash, job
         )
         logging.debug("matching logs: %i", len(matching_logs))
+        if matching_logs == 0:
+            logging.warning(
+                "no build.log found containing %s, no build data can be collected",
+                _hash,
+            )
 
         matching_summaries = get_matching_summaries(
             str(self.gateway.compass.repopath), _hash, job
         )
+        if matching_summaries == 0:
+            logging.warning(
+                "no summary.dat found containing %s; no test data can be collected",
+                _hash,
+            )
         logging.debug("matching summaries: %i", len(matching_summaries))
 
         # TODO Remove after sending to prod
@@ -251,6 +261,8 @@ class JobProcessor:
         )
         logging.debug("checking out %s", job.machine_name)
         self.gateway.git_artifacts.checkout(job.machine_name)
+        logging.debug("pulling from %s", job.machine_name)
+        self.gateway.git_artifacts.pull()
         os.chdir(
             self.gateway.compass.get_branch_path(sanitize_branch_name(job.branch_name))
         )
