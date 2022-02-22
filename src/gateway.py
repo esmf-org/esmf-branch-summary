@@ -61,7 +61,9 @@ class Archive(Database):
     def insert_rows(self, data: List[Dict[str, Any]], _hash):
         self.create_table()
         rows = to_summary_rows(
-            data, _hash, modified=datetime.datetime.now().strftime("%m/%d/%Y_%H:%M:%S")
+            data,
+            str(_hash),
+            modified=datetime.datetime.now().strftime("%m/%d/%Y_%H:%M:%S"),
         )
         cur = self.con.cursor()
         cur.executemany(
@@ -74,7 +76,7 @@ class Archive(Database):
         cur = self.con.cursor()
         cur.execute(
             """SELECT branch, host, compiler, c_version, mpi, m_version, o_g, os, build, u_pass, u_fail, s_pass, s_fail, e_pass, e_fail, nuopc_pass, nuopc_fail, hash, modified FROM Summaries WHERE hash = ?""",
-            (_hash,),
+            (str(_hash),),
         )
         return (SummaryRowFormatted(*item) for item in cur.fetchall())
 
@@ -82,19 +84,19 @@ class Archive(Database):
 def to_summary_row(item: Dict[str, Any], _hash: str, modified: str):
     """converts dict to SummaryRow"""
     return SummaryRow(
-        **item, hash=_hash, modified=modified, id=generate_id(item, _hash)
+        **item, hash=str(_hash), modified=modified, id=generate_id(item, _hash)
     )
 
 
 def to_summary_rows(
-    data: List[Dict[str, Any]], _hash: str, modified: str
+    data: List[Dict[str, Any]], _hash, modified: str
 ) -> Generator[SummaryRow, None, None]:
     """returns a generator of summary rows"""
-    return (to_summary_row(item, _hash, modified) for item in data)
+    return (to_summary_row(item, str(_hash), modified) for item in data)
 
 
 def generate_id(item: Dict[str, Any], _hash) -> str:
     """generate an md5 hash from unique row data"""
     return hashlib.md5(
-        f"{item['branch']}{item['host']}{item['os']}{item['compiler']}{item['c_version']}{item['mpi']}{item['m_version'].lower()}{item['o_g']}{_hash}".encode()
+        f"{item['branch']}{item['host']}{item['os']}{item['compiler']}{item['c_version']}{item['mpi']}{item['m_version'].lower()}{item['o_g']}{str(_hash)}".encode()
     ).hexdigest()
