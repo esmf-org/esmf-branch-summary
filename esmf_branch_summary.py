@@ -108,7 +108,7 @@ def main():
     handle_logging(args)
 
     logging.info("starting...")
-    logging.debug("Args are : %s", args)
+    logging.debug("args are : %s", args)
 
     root = pathlib.Path(__file__)
     repopath = pathlib.Path(os.path.abspath(args.repo_path))
