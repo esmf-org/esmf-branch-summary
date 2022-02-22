@@ -37,5 +37,4 @@ def test_fetch_branches():
     ]
 
     actual = job.get_branch_hashes(_job, _git)
-    print(actual)
     assert actual == expected
