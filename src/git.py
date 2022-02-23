@@ -10,6 +10,7 @@ import logging
 import os
 import shutil
 import subprocess
+import pathlib
 from typing import Any, List, Union
 
 
@@ -18,7 +19,7 @@ class Git:
 
     WARNINGS = ["not something we can merge"]
 
-    def __init__(self, repopath: str = os.getcwd()):
+    def __init__(self, repopath: pathlib.Path):
         self.repopath = repopath
 
     def _command_safe(
@@ -192,12 +193,12 @@ class Git:
 
 def from_clone(url, _path: str):
     """creates a Git instance from a url"""
-    temp = Git(_path)
+    temp = Git(pathlib.Path(_path))
     if os.path.exists(_path):
         shutil.rmtree(_path)
     os.mkdir(_path)
     temp.clone(url, _path)
-    temp.repopath = os.path.join(_path, "esmf-test-summary")
+    temp.repopath = pathlib.Path(os.path.join(_path, "esmf-test-summary"))
     return temp
 
 

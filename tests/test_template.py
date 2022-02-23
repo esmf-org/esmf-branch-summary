@@ -1,5 +1,6 @@
 # pylint: skip-file
 
+import pathlib
 from src import git, job
 from unittest.mock import MagicMock
 
@@ -23,7 +24,7 @@ def test_fetch_branches():
     with open("./tests/fixtures/git_lot.txt") as _file:
         clz = MockClz(_file.read())
 
-    _git = git.Git()
+    _git = git.Git(pathlib.Path("."))
     _git.log = MagicMock(return_value=clz)
 
     _job = job.JobRequest(machine_name="cheyenne", branch_name="develop", qty=5)
@@ -36,5 +37,5 @@ def test_fetch_branches():
         "ESMF_8_3_0_beta_snapshot_05-30-gf84ebe0",
     ]
 
-    actual = job.get_branch_hashes(_job, _git)
+    actual = job.processor.get_branch_hashes(_job, _git)
     assert actual == expected
