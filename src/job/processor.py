@@ -14,11 +14,11 @@ import os
 import shutil
 import subprocess
 from typing import Any, Dict, Generator, List, MutableSequence, Set, Tuple
+from tabulate import tabulate
 
 from src import constants
 from src.job.hash import Hash
-from src.job.unique_list import UniqueList
-from tabulate import tabulate
+from src.job.list import UniqueList
 
 
 def _replace(old: str, new: str, target: str):

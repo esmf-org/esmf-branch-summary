@@ -1,3 +1,5 @@
+# pylint: skip-file
+
 from .processor import Processor, JobRequest, JobAttributes
-from .unique_list import UniqueList
+from .list import UniqueList
 from .hash import Hash

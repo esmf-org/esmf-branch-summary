@@ -1,3 +1,11 @@
+"""
+hash.py
+
+ESMF unique hash type
+
+author: Ryan Long <ryan.long@noaa.gov>
+"""
+
 import collections
 import re
 from typing import List

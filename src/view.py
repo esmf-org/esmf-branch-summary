@@ -1,9 +1,18 @@
+"""
+view.py
+
+CLI View layer
+
+author: Ryan Long <ryan.long@noaa.gov>
+"""
+
 import argparse
-from numbers import Integral
 import pathlib
 
 
 class ViewCLI:
+    """interfaces user via cli"""
+
     @classmethod
     def get_args(cls):
         """get_args display CLI to user and gets options
@@ -12,7 +21,8 @@ class ViewCLI:
             Namespace: object-
         """
         parser = argparse.ArgumentParser(
-            description="esmf_branch_summary aggregates esmf framework test results from other branches into a summary file ."
+            description="""esmf_branch_summary aggregates esmf framework test results from
+            other branches into a summary file ."""
         )
         parser.add_argument(
             "repo_path",
