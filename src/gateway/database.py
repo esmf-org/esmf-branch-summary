@@ -34,7 +34,7 @@ class Database(abc.ABC):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def insert_rows(self, data: List[Any], _hash):
+    def insert_rows(self, data: List[Any], _hash) -> int:
         """inserts rows"""
         raise NotImplementedError
 
@@ -58,12 +58,14 @@ class Archive(Database):
         cur.execute("""CREATE INDEX if not exists summary_id_idx ON Summaries (id)""")
         self.con.commit()
 
-    def insert_rows(self, data: List[Dict[str, Any]], _hash):
+    def insert_rows(self, data: List[Dict[str, Any]], _hash) -> int:
         self.create_table()
-        rows = to_summary_rows(
-            data,
-            str(_hash),
-            modified=datetime.datetime.now().strftime("%m/%d/%Y_%H:%M:%S"),
+        rows = list(
+            to_summary_rows(
+                data,
+                str(_hash),
+                modified=datetime.datetime.now().strftime("%m/%d/%Y_%H:%M:%S"),
+            )
         )
         cur = self.con.cursor()
         cur.executemany(
@@ -71,6 +73,7 @@ class Archive(Database):
             rows,
         )
         self.con.commit()
+        return cur.rowcount
 
     def fetch_rows_by_hash(self, _hash: str):
         cur = self.con.cursor()
@@ -83,9 +86,7 @@ class Archive(Database):
 
 def to_summary_row(item: Dict[str, Any], _hash: str, modified: str):
     """converts dict to SummaryRow"""
-    return SummaryRow(
-        **item, hash=str(_hash), modified=modified, id=generate_id(item, _hash)
-    )
+    return SummaryRow(**item, modified=modified, id=generate_id(item, _hash))
 
 
 def to_summary_rows(

@@ -11,14 +11,18 @@ import functools
 import itertools
 import logging
 import os
+import pathlib
 import shutil
 import subprocess
-from typing import Any, Dict, Generator, List, MutableSequence, Set, Tuple
-from tabulate import tabulate
+from typing import Any, Dict, Generator, List, MutableSequence, Set, Tuple, Union
 
 from src import constants
 from src.job.hash import Hash
 from src.job.list import UniqueList
+from src.git import Git
+from src.compass import Compass
+from src.gateway.database import Database
+from tabulate import tabulate
 
 
 def _replace(old: str, new: str, target: str):
@@ -59,6 +63,24 @@ JobAttributes = collections.namedtuple(
     "JobAttributes",
     ["branch", "host", "compiler", "c_version", "o_g", "mpi", "m_version"],
 )
+
+
+class BranchSummaryGateway:
+    """represents gateways needed"""
+
+    def __init__(
+        self,
+        git_artifacts: Git,
+        git_summaries: Git,
+        git_esmf: Git,
+        archive: Database,
+        compass: Compass,
+    ):
+        self.git_artifacts = git_artifacts
+        self.git_summaries = git_summaries
+        self.git_esmf = git_esmf
+        self.archive = archive
+        self.compass = compass
 
 
 class Processor:
@@ -112,7 +134,7 @@ class Processor:
         )
         if force and not os.path.exists(branch_path):
             logging.debug("creating directory %s", branch_path)
-            os.mkdir(branch_path)
+            os.makedirs(branch_path)
         return branch_path
 
     def copy_files_to_repo_path(self, files: List[str]) -> None:
@@ -126,15 +148,14 @@ class Processor:
 
     def run_jobs(self) -> None:
         """runs the instance jobs"""
-        self.gateway.git_summaries.clone(
-            "git@github.com:esmf-org/esmf-test-summary.git",
-            self.gateway.git_summaries.repopath,
-        )
-        self.gateway.git_summaries.repopath = os.path.join(
-            self.gateway.git_summaries.repopath
-        )
+        # self.gateway.git_summaries.clone(
+        #     "git@github.com:esmf-org/esmf-test-summary.git",
+        #     self.gateway.git_summaries.repopath,
+        # )
+        # self.gateway.git_summaries.repopath = os.path.join(
+        #     self.gateway.git_summaries.repopath
+        # )
         for job in self.jobs:
-            os.chdir(self.gateway.compass.repopath)
             self.generate_summaries(job)
             logging.info(
                 "finished summaries for branch %s on machine %s",
@@ -155,11 +176,12 @@ class Processor:
             if idx + 1 >= job.qty:
                 return
 
-    def write_archive(self, data: List[TestResult], _hash) -> None:
+    def write_archive(self, data: List[Any], _hash: Hash) -> None:
         """writes the provided data to the archive"""
         logging.debug("writing archive %s length %i", _hash, len(data))
         self.gateway.archive.create_table()
-        self.gateway.archive.insert_rows([item._asdict() for item in data], str(_hash))
+        result = self.gateway.archive.insert_rows([item for item in data], str(_hash))
+        logging.info("processed [%i] rows", result)
 
     def _verify_matches(
         self, matching_summaries: Set[str], matching_logs: Set[str], _hash: Hash
@@ -191,12 +213,12 @@ class Processor:
                     [x for x in results.stdout.splitlines()[:11]],
                 )
 
-    def generate_summary(self, _hash, job: JobRequest) -> List[TestResult]:
+    def generate_summary(self, _hash: Hash, job: JobRequest) -> List[Any]:
         """generates summary based on _hash and job and returns the results"""
         logging.debug("last branch hash is %s", _hash)
 
         matching_logs = get_matching_logs(
-            str(self.gateway.compass.repopath), _hash, job
+            str(self.gateway.compass.repopath), str(_hash), job
         )
         logging.debug("matching logs: %i", len(matching_logs))
         if matching_logs == 0:
@@ -206,7 +228,7 @@ class Processor:
             )
 
         matching_summaries = get_matching_summaries(
-            str(self.gateway.compass.repopath), _hash, job
+            str(self.gateway.compass.repopath), str(_hash), job
         )
         if matching_summaries == 0:
             logging.warning(
@@ -221,7 +243,22 @@ class Processor:
         build_passing_results = extract_build_passing_results(matching_logs)
         logging.debug("finished reading logs")
 
-        return compile_test_results(matching_summaries, build_passing_results)
+        result = compile_test_results(matching_summaries, build_passing_results)
+        # TODO
+        result = [
+            (
+                {
+                    **x._asdict(),
+                    **{
+                        "hash": generate_link(
+                            hash=self.fetch_git_hash_full(_hash),
+                        )
+                    },
+                }
+            )
+            for x in result
+        ]
+        return result
 
     def send_summary_to_repo(
         self,
@@ -258,13 +295,21 @@ class Processor:
         logging.info(
             "generating summaries for %s [%s]", job.branch_name, job.machine_name
         )
-        logging.debug("checking out %s", job.machine_name)
-        self.gateway.git_artifacts.checkout(job.machine_name)
-        logging.debug("pulling from %s", job.machine_name)
-        self.gateway.git_artifacts.pull()
-        os.chdir(
+
+        branch_path = pathlib.Path(
             self.gateway.compass.get_branch_path(sanitize_branch_name(job.branch_name))
         )
+        if not os.path.exists(branch_path):
+            os.mkdir(branch_path)
+            self.gateway.git_artifacts.checkout(job.machine_name)
+        os.chdir(branch_path)
+
+        self.gateway.git_artifacts.pull()
+
+        logging.debug("checking out %s", job.machine_name)
+
+        logging.debug("pulling from %s", job.machine_name)
+        self.gateway.git_artifacts.pull()
         for idx, _hash in enumerate(self.get_recent_branch_hashes(job)):
             summary = self.generate_summary(_hash, job)
             if len(summary) == 0:
@@ -277,16 +322,43 @@ class Processor:
                 continue
             self.send_summary_to_repo(job, summary, _hash, idx == 0)
 
+    @functools.lru_cache
+    def _fetch_git_log(self):
+        """returns git log for esmf"""
+        results = self.gateway.git_esmf.log("--all", "--format=%H")
+        return results
+
+    # @functools.lru_cache
+    def fetch_git_hash_full(self, _hash: Hash) -> str:
+        """returns the full git hash by matching attributes in log message"""
+        return "12345"
+        search = ["--all-match", "--format=%H"]
+        print(self._fetch_git_log().stdout.split("\n"))
+        for line in self._fetch_git_log().stdout.split("\n"):
+            if str(_hash) in line:
+                print(line)
+                print("HOORAY!")
+                exit()
+        result = self.gateway.git_artifacts.log(*search).stdout.split("\n")
+        for x in result:
+            print(x)
+        logging.error("%s returned %s", _hash.git_prefix, result)
+
+        exit()
+        if result == "":
+            logging.warning("full hash not found [%s]", _hash)
+        return result
+
     def fetch_summary_file_contents(self, _hash: Hash):
         """fetches the contents to create a summary file based on _hash"""
         results = []
         for item in self.gateway.archive.fetch_rows_by_hash(_hash):
-            # replace -1 with "pending"
             row = {
                 k: "pending" if v == constants.QUEUED else v
                 for k, v in item._asdict().items()
             }
-            row["hash"] = generate_link(**row)
+
+            # row["hash"] = generate_link(hash=self.fetch_git_hash_full(row, _hash))
             row["build"] = "Pass" if row["build"] == constants.PASS else "Fail"
             results.append(dict(**row))
         return sort_file_summary_content(results)
@@ -295,6 +367,9 @@ class Processor:
         """writes all file types required to disk"""
         logging.debug("writing files %s", file_path)
         data = self.fetch_summary_file_contents(_hash)
+        if not data:
+            logging.warning("no new summary data collected")
+            return
 
         _dir = os.path.dirname(file_path)
         if not os.path.exists(_dir):
@@ -388,9 +463,9 @@ def get_matching_summaries(cwd: str, _hash: str, job: JobRequest) -> Set[str]:
 
 def find_files(
     _root_path: str,
-    value_search_strings: List[str] = None,
-    file_name_search_strings: List[str] = None,
-    file_name_ignore_strings: List[str] = None,
+    value_search_strings: Union[List[str], None] = None,
+    file_name_search_strings: Union[List[str], None] = None,
+    file_name_ignore_strings: Union[List[str], None] = None,
 ) -> List[str]:
     """finds files containing all values_search_strings where file path
     includes file_name_search_strings but does not contain any
@@ -412,7 +487,6 @@ def find_files(
     )
 
     results = []
-
     for root, _, files in os.walk(_root_path, followlinks=True):
         for file in files:
             file = os.path.join(root, file)
@@ -434,7 +508,6 @@ def find_files(
                             for search_string in value_search_strings
                         ):
                             bisect.insort(results, os.path.join(root, file))
-
     return results
 
 
@@ -632,15 +705,23 @@ def fetch_build_result(needle: Dict[str, Any], haystack: Dict[JobAttributes, Any
 
 def generate_link(**kwds) -> str:
     """generates a link to github to jump to the _hash passed in"""
+    return f"[artifacts](https://github.com/esmf-org/esmf-test-artifacts/tree/{kwds['hash']})"
+
+
+def generate_link_old(**kwds) -> str:
+    """generates a link to github to jump to the _hash passed in"""
     return f"[artifacts](https://github.com/esmf-org/esmf-test-artifacts/tree/{kwds['host'].replace('/', '_')}/{kwds['branch'].replace('/', '_')}/{kwds['host'].replace('/', '_')}/{kwds['compiler']}/{kwds['c_version']}/{kwds['o_g']}/{kwds['mpi']}/{kwds['m_version'].lower()})"
 
 
 def get_branch_hashes(job, git) -> MutableSequence[Any]:
     """Uses git log to determine all unique hashes for a branch_name/[machine_name]"""
-    result = git.log(f"origin/{job.machine_name}")
+    result = git.log("--format=%B", f"origin/{job.machine_name}")
     _stdout = [
         line.strip()
         for line in result.stdout.split("\n")
         if sanitize_branch_name(job.branch_name) in line and job.machine_name in line
     ]
     return UniqueList((Hash(x) for x in _stdout))[: job.qty]
+
+
+# grep --all-match --format=%B --grep=gae1d61d --grep=discover --grep=jedwards_pio_update --grep=gfortran --grep=intelmpi --grep=_g_ --grep=build
