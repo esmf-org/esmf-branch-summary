@@ -13,8 +13,11 @@ import logging
 import os
 import pathlib
 import shutil
+from sre_constants import BRANCH
 import subprocess
+
 from typing import Any, Dict, Generator, List, MutableSequence, Set, Tuple, Union
+
 
 from src import constants
 from src.job.hash import Hash
@@ -58,6 +61,69 @@ TestResult = collections.namedtuple(
 JobRequest = collections.namedtuple(
     "JobRequest", ["machine_name", "branch_name", "qty"]
 )
+
+
+class ReadFile:
+
+    def __init__(self, file_path: pathlib.Path):
+        self.file_path = file_path
+        self.file_object = open(file_path, "r")
+
+    @property
+    def content(self) -> Generator[str, None, None]:
+        with open(self.file_path, "r", encoding="utf-8") as _file:
+            yield _file.readline()
+
+    @classmethod
+    def from_path(cls, _path: pathlib.Path):
+        pass
+
+
+
+
+class Summary:
+    """represents a summary.dat file"""
+
+    def __init__(self, branch, host, compiler, c_version, o_g, mpi, mpi_version):
+        self.branch = branch
+        self.host = host
+        self.compiler = compiler
+        self.c_version = c_version
+        self.o_g = o_g
+        self.mpi = mpi
+        self.mpi_version = mpi_version
+
+    
+
+
+class Build:
+
+    SUCCESS_MESSAGE = "ESMF library built successfully"
+    """represents a build.log file"""
+
+    def __init__(self, file_path: pathlib.Path):
+        self.file_path = file_path
+        self.file_object = open(file_path, "r")
+
+    @property
+    def content(self) -> Generator[str, None, None]:
+        with open(self.file_path, "r", encoding="utf-8") as _file:
+            yield _file.readline()
+
+    def is_build_passing(self, file_path: pathlib.Path) -> bool:
+        """Determines if the build is passing by scanning file_path"""
+        for idx, line in enumerate(self.content):
+            if self.SUCCESS_MESSAGE in line:
+                return True
+            # Check the bottom 200 lines only for speed
+            if idx > 200:
+                logging.debug(
+                    "success message not found in file [%s]",
+                    file_path,
+                )
+                return False
+        return False
+
 
 JobAttributes = collections.namedtuple(
     "JobAttributes",
@@ -519,7 +585,7 @@ def extract_build_passing_results(log_paths: Set[str]) -> Dict[JobAttributes, bo
     return {fetch_job_attributes(_file): is_build_passing(_file) for _file in log_paths}
 
 
-def fetch_job_attributes(_path: str) -> JobAttributes:
+def fetch_job_attributes(_path: pathlib.Path) -> JobAttributes:
     """returns job attributes based on position in path"""
     result = os.path.normpath(_path).split(os.sep)
     return JobAttributes(
@@ -527,7 +593,7 @@ def fetch_job_attributes(_path: str) -> JobAttributes:
     )
 
 
-def is_build_passing(file_path: str) -> bool:
+def is_build_passing(file_path: pathlib.Path) -> bool:
     """Determines if the build is passing by scanning file_path"""
     if not os.path.exists(file_path):
         logging.error("file path does not exist [%s]", file_path)
@@ -713,7 +779,7 @@ def generate_link_old(**kwds) -> str:
     return f"[artifacts](https://github.com/esmf-org/esmf-test-artifacts/tree/{kwds['host'].replace('/', '_')}/{kwds['branch'].replace('/', '_')}/{kwds['host'].replace('/', '_')}/{kwds['compiler']}/{kwds['c_version']}/{kwds['o_g']}/{kwds['mpi']}/{kwds['m_version'].lower()})"
 
 
-def get_branch_hashes(job, git) -> MutableSequence[Any]:
+def get_branch_hashes(job, git) -> Sequence[Any]:
     """Uses git log to determine all unique hashes for a branch_name/[machine_name]"""
     result = git.log("--format=%B", f"origin/{job.machine_name}")
     _stdout = [
