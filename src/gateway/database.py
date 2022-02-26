@@ -8,6 +8,7 @@ author: Ryan Long <ryan.long@noaa.gov>
 
 import hashlib
 import datetime
+import pathlib
 import sqlite3
 import collections
 from typing import Any, Dict, Generator, List
@@ -47,8 +48,8 @@ class Database(abc.ABC):
 class Archive(Database):
     """persists data to a sqlite3 database"""
 
-    def __init__(self, db_path):
-        self.con = sqlite3.connect(db_path)
+    def __init__(self, db_path: pathlib.Path):
+        self.con = sqlite3.connect(str(db_path))
 
     def create_table(self):
         cur = self.con.cursor()
