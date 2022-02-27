@@ -13,7 +13,7 @@ import logging
 import os
 import shutil
 import subprocess
-from typing import Any, Dict, Generator, List, MutableSequence, Set, Tuple
+from typing import Any, Dict, Generator, List, MutableSequence, Set, Tuple, Union
 from tabulate import tabulate
 
 from src import constants
@@ -388,9 +388,9 @@ def get_matching_summaries(cwd: str, _hash: str, job: JobRequest) -> Set[str]:
 
 def find_files(
     _root_path: str,
-    value_search_strings: List[str] = None,
-    file_name_search_strings: List[str] = None,
-    file_name_ignore_strings: List[str] = None,
+    value_search_strings: Union[None, List[str]] = None,
+    file_name_search_strings: Union[None, List[str]] = None,
+    file_name_ignore_strings: Union[None, List[str]] = None,
 ) -> List[str]:
     """finds files containing all values_search_strings where file path
     includes file_name_search_strings but does not contain any
