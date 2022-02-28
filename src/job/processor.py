@@ -304,9 +304,9 @@ class Processor:
         )
         if not os.path.exists(branch_path):
             os.mkdir(branch_path)
+        os.chdir(branch_path)
         logging.debug("checking out %s", job.machine_name)
         self.gateway.git_artifacts.checkout(job.machine_name)
-        os.chdir(branch_path)
 
         logging.debug("pulling from %s", job.machine_name)
         self.gateway.git_artifacts.pull()
