@@ -213,7 +213,7 @@ class Processor:
         logging.debug("generating summary for [%s]", _hash)
 
         matching_logs = get_matching_logs(
-            str(self.gateway.compass.repopath), str(_hash), job
+            self.gateway.compass.repopath, str(_hash), job
         )
         logging.debug("matching logs: %i", len(matching_logs))
         if matching_logs == 0:
@@ -223,7 +223,7 @@ class Processor:
             )
 
         matching_summaries = get_matching_summaries(
-            str(self.gateway.compass.repopath), str(_hash), job
+            self.gateway.compass.repopath, str(_hash), job
         )
         logging.debug("matching summaries: %i", len(matching_summaries))
         if matching_summaries == 0:
@@ -429,7 +429,9 @@ def generate_commit_message(branch_name: str, _hash: Hash) -> str:
     return f"updated summary for hash {_hash} on {branch_name}"
 
 
-def get_matching_logs(cwd: str, _hash: str, job: JobRequest) -> List[file.Build]:
+def get_matching_logs(
+    cwd: pathlib.Path, _hash: str, job: JobRequest
+) -> List[file.Build]:
     """finds the build.log files"""
     logging.debug("fetching matching logs to determine build pass/fail")
     paths = set(
@@ -443,7 +445,9 @@ def get_matching_logs(cwd: str, _hash: str, job: JobRequest) -> List[file.Build]
     return [file.Build(pathlib.Path(path)) for path in paths]
 
 
-def get_matching_summaries(cwd: str, _hash: str, job: JobRequest) -> List[file.Summary]:
+def get_matching_summaries(
+    cwd: pathlib.Path, _hash: str, job: JobRequest
+) -> List[file.Summary]:
     """finds the summary.dat files"""
     logging.debug("fetching matching summaries to extract test results")
     paths = set(
@@ -458,7 +462,7 @@ def get_matching_summaries(cwd: str, _hash: str, job: JobRequest) -> List[file.S
 
 
 def find_files(
-    _root_path: str,
+    _root_path: pathlib.Path,
     value_search_strings: Union[List[str], None] = None,
     file_name_search_strings: Union[List[str], None] = None,
     file_name_ignore_strings: Union[List[str], None] = None,
