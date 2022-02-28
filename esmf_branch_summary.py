@@ -20,29 +20,11 @@ import tempfile
 import timeit
 
 
-from src import compass as _compass
+from src import compass as _compass, constants
 from src import git as _git
 from src import view as _view
 from src import job as _job
 from src.gateway import database as _gateway
-
-
-MACHINE_NAME_LIST = sorted(
-    [
-        "cheyenne",
-        "hera",
-        "orion",
-        "jet",
-        "gaea",
-        "discover",
-        "chianti",
-        "acorn",
-        "gaffney",
-        "izumi",
-        "koehr",
-        "onyx",
-    ]
-)
 
 
 def handle_logging(args):
@@ -84,6 +66,7 @@ def signal_handler(_, __):
 
 
 def main():
+
     """main point of execution"""
     starttime = timeit.default_timer()
     signal.signal(signal.SIGINT, signal_handler)
@@ -94,43 +77,37 @@ def main():
     logging.info("starting...")
     logging.debug("args are : %s", args)
 
-    root = pathlib.Path(__file__)
+    root = pathlib.Path(os.path.abspath(__file__))
     repopath = pathlib.Path(os.path.abspath(args.repo_path))
-
     compass = _compass.Compass.from_path(root, repopath)
+
     archive = _gateway.Archive(pathlib.Path(compass.archive_path))
     git_artifacts = _git.Git(pathlib.Path(compass.repopath))
     temp_dir = os.path.join(
-        os.path.abspath(tempfile.gettempdir()), "esmf_branch_summary_space"
+        os.path.abspath(tempfile.gettempdir()), constants.DEFAULT_TEMP_SPACE_NAME
     )
+    
     if os.path.exists(temp_dir):
         shutil.rmtree(temp_dir)
     os.mkdir(temp_dir)
     logging.info("cloning summaries")
     print(temp_dir)
     git_summaries = _git.from_shallow_clone(
-        "git@github.com:esmf-org/esmf-test-summary.git",
+        constants.SUMMARIES_REPO,
         pathlib.Path(temp_dir),
     )
-
-    logging.info("cloning esmf")
-    git_esmf = _git.from_shallow_clone(
-        "https://github.com/esmf-org/esmf.git",
-        pathlib.Path(temp_dir),
-    )
-
     processor = _job.Processor(
-        MACHINE_NAME_LIST,
+        constants.MACHINE_NAME_LIST,
         args.branches,
         args.number,
         _job.processor.BranchSummaryGateway(
-            git_artifacts, git_summaries, git_esmf, archive, compass
+            git_artifacts, git_summaries, archive, compass
         ),
     )
     logging.info(
         "itterating over %s branches in %s machines over %s most recent branches",
         len(args.branches),
-        len(MACHINE_NAME_LIST),
+        len(constants.MACHINE_NAME_LIST),
         args.number,
     )
     processor.run_jobs()
