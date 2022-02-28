@@ -110,28 +110,17 @@ class Processor:
         class_name = type(self).__name__
         return f"<{class_name}>"
 
-    def extract_branch_from_log_line(self, value: str) -> str:
-        """parses a git logging statement for a branch name
-
-        ex: 6a3214af0e61 update for test of gfortran_8.3.0_mpiuni_O_develop with hash v8.3.0b08-5-g64eb133 on discover [ci skip] -> develop
-
-        """
-        pattern = r"(_[Og]_)(.*)(\swith.*)"
-        result = re.search(pattern, value)
-        if result is not None:
-            return result.group(2)
-        return ""
-
-    def find_branch_names(self):
+    def extract_branch_names_from_git_log(self):
         """extracts branch names from git log"""
         if not self._branches:
             self.gateway.git_artifacts.fetch()
             self._branches = list(
                 {
-                    self.extract_branch_from_log_line(item)
+                    extract_branch_from_log_line(item)
                     for item in self.gateway.git_artifacts.log("--all").stdout.split(
                         "\n"
                     )
+                    if extract_branch_from_log_line(item) != ""
                 }
             )
         return self._branches
@@ -145,7 +134,7 @@ class Processor:
                 self._branches = self.gateway.git_artifacts.snapshot(self.REPO_URL)
             except GitError:
                 logging.debug("failed to fetch branches via snapshot. parsing logs...")
-                self._branches = self.find_branch_names()
+                self._branches = self.extract_branch_names_from_git_log()
         return self._branches
 
     @property
@@ -537,6 +526,19 @@ def find_files(
                         ):
                             bisect.insort(results, os.path.join(root, file_path))
     return results
+
+
+def extract_branch_from_log_line(value: str) -> str:
+    """parses a git logging statement for a branch name
+
+    ex: 6a3214af0e61 update for test of gfortran_8.3.0_mpiuni_O_develop with hash v8.3.0b08-5-g64eb133 on discover [ci skip] -> develop
+
+    """
+    pattern = r"(_[Og]_)(.*)(\swith.*)"
+    result = re.search(pattern, value)
+    if result is not None:
+        return result.group(2)
+    return ""
 
 
 def extract_build_passing_results(
