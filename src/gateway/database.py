@@ -68,7 +68,6 @@ class Archive(Database):
             )
         )
         cur = self.con.cursor()
-        print(rows[0])
         cur.executemany(
             "INSERT OR REPLACE INTO summaries VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
             rows,

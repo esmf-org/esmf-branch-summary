@@ -1,3 +1,9 @@
+"""
+Emulates file contenent reading and specialized files
+
+author: Ryan Long <ryan.long@noaa.gov>
+"""
+
 import abc
 import collections
 import functools

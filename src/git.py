@@ -6,10 +6,10 @@ Git CLI interaction layer
 author: Ryan Long <ryan.long@noaa.gov>
 """
 
-import functools
+
 import logging
 import os
-import shutil
+
 import subprocess
 import pathlib
 from typing import Any, List, Union
@@ -175,11 +175,7 @@ class Git:
 
     def clone(self, url, target_path=None) -> subprocess.CompletedProcess:
         """git clone <url> <target_path>"""
-        # if os.path.exists(self.repopath):
-        #     shutil.rmtree(self.repopath)
-        # os.mkdir(self.repopath)
         cmd = ["git", "clone", "--depth=500", url, target_path]
-        print(cmd)
         return self._command_safe(cmd, target_path)
 
     def merge(self, machine_name: str) -> subprocess.CompletedProcess:
@@ -191,21 +187,12 @@ class Git:
         """git rebase origin/<branch_name>"""
         return self._command_safe(["git", "rebase", f"origin/{branch_name}"])
 
-    def reset(self):
-        """mirrors remote locally
-
-        Use with caution.
-        """
-        pass
-
-    @functools.lru_cache
     def log(self, *args) -> subprocess.CompletedProcess:
         """git log <*args>"""
         cmd = ["git", "log"]
         if args:
             for arg in args:
                 cmd.append(arg)
-        print(cmd, self.repopath)
         return self._command_safe(cmd, self.repopath)
 
 
@@ -239,7 +226,6 @@ def _from_clone(url, _path: pathlib.Path) -> "Git":
 def extract_parent_dir_name(value: str):
     """figures out what the clone directory will be called"""
     # "git@github.com:esmf-org/esmf-test-summary.git"
-    print(value)
     return value.split("/")[-1].split(".")[0]
 
 

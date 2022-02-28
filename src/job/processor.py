@@ -14,17 +14,16 @@ import os
 import pathlib
 import shutil
 import subprocess
-
 from typing import Any, Dict, Generator, List, Sequence, Tuple, Union
 
+from tabulate import tabulate
 
 from src import constants, file
-from src.job.hash import Hash
-from src.job.list import UniqueList
-from src.git import Git
 from src.compass import Compass
 from src.gateway.database import Database, SummaryRowFormatted
-from tabulate import tabulate
+from src.git import Git
+from src.job.hash import Hash
+from src.job.list import UniqueList
 
 
 def _replace(old: str, new: str, target: str):
@@ -314,7 +313,6 @@ class Processor:
         """writes all file types required to disk"""
         logging.debug("writing files %s", file_path)
         data = list([item for item in self.fetch_summary_file_contents(_hash)])
-        print(data[0])
         if not data:
             logging.warning("no new summary data collected")
             return
@@ -488,26 +486,26 @@ def find_files(
 
     results = []
     for root, _, files in os.walk(_root_path, followlinks=True):
-        for file in files:
-            file = os.path.join(root, file)
+        for _file in files:
+            file_path = os.path.join(root, _file)
 
             has_filename_search_string = len(file_name_search_strings) == 0 or all(
-                search_string in file for search_string in file_name_search_strings
+                search_string in file_path for search_string in file_name_search_strings
             )
 
             has_filename_ignore_string = any(
-                search_string in file for search_string in file_name_ignore_strings
+                search_string in file_path for search_string in file_name_ignore_strings
             )
 
             if has_filename_search_string and not has_filename_ignore_string:
-                file_path = os.path.join(root, file)
+                file_path = os.path.join(root, file_path)
                 with open(file_path, "r", errors="ignore", encoding="utf-8") as _file:
                     for line in _file.readlines():
                         if any(
                             str(search_string) in line
                             for search_string in value_search_strings
                         ):
-                            bisect.insort(results, os.path.join(root, file))
+                            bisect.insort(results, os.path.join(root, file_path))
     return results
 
 

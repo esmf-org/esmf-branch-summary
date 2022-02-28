@@ -86,12 +86,11 @@ def main():
     temp_dir = os.path.join(
         os.path.abspath(tempfile.gettempdir()), constants.DEFAULT_TEMP_SPACE_NAME
     )
-    
+
     if os.path.exists(temp_dir):
         shutil.rmtree(temp_dir)
     os.mkdir(temp_dir)
     logging.info("cloning summaries")
-    print(temp_dir)
     git_summaries = _git.from_shallow_clone(
         constants.SUMMARIES_REPO,
         pathlib.Path(temp_dir),
