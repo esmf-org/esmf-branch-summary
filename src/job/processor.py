@@ -117,9 +117,10 @@ class Processor:
 
         """
         pattern = r"(_[Og]_)(.*)(\swith.*)"
+        print(pattern)
         result = re.search(pattern, value)
         if result is not None:
-            return result.group(1)
+            return result.group(2)
         return ""
 
     def find_branch_names(self):
