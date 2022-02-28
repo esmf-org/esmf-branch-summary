@@ -12,6 +12,7 @@ import itertools
 import logging
 import os
 import pathlib
+import re
 import shutil
 import subprocess
 from typing import Any, Dict, Generator, List, Sequence, Tuple, Union
@@ -108,6 +109,29 @@ class Processor:
     def __repr__(self):
         class_name = type(self).__name__
         return f"<{class_name}>"
+
+    def extract_branch_from_log_line(self, value: str) -> str:
+        """parses a git logging statement for a branch name
+
+        ex: 6a3214af0e61 update for test of gfortran_8.3.0_mpiuni_O_develop with hash v8.3.0b08-5-g64eb133 on discover [ci skip] -> develop
+
+        """
+        pattern = r"(_[Og]_)(.*)(\swith.*)"
+        result = re.search(pattern, value)
+        if result is not None:
+            return result.group(1)
+        return ""
+
+    def find_branch_names(self):
+        """extracts branch names from git log"""
+        if not self._branches:
+            self.gateway.git_artifacts.fetch()
+            self._branches = list({
+                self.extract_branch_from_log_line(item)
+                for item in self.gateway.git_artifacts.log("--all").stdout.split("\n")
+            })
+
+        return self._branches
 
     @property
     def branches(self):

@@ -122,7 +122,7 @@ def main():
     )
     logging.info(
         "itterating over %s branches in %s machines over %s most recent branches",
-        len(args.branches),
+        0 if args.branches is None else len(args.branches),
         len(constants.MACHINE_NAME_LIST),
         args.number,
     )
