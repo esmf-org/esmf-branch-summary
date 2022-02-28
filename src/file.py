@@ -195,6 +195,7 @@ class Build(ReadOnly):
         super().__init__(file_path)
         self.data = fetch_job_attributes(file_path)
 
+    @property
     def is_build_passing(self) -> bool:
         """Determines if the build is passing by scanning file_path"""
         for idx, line in enumerate(self.content):
