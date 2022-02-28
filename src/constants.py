@@ -1,5 +1,10 @@
 """ Constants """
 
+import os
+
+
+is_prod = os.environ.get("ESMF_BRANCH_SUMMARIZER_ENV") == "PROD"
+
 # Symbols
 QUEUED = -1
 PASS = 1
@@ -10,7 +15,9 @@ DEFAULT_FILE_ENCODING = "ISO-8859-1"
 DEFAULT_TEMP_SPACE_NAME = "esmf_branch_summary_space"
 
 # Repositories
-SUMMARIES_REPO = "git@github.com:esmf-org/esmf-test-summary.git"
+DEV_REPO = "git@github.com:ryanlong1004/esmf-test-summary.git"
+PROD_REPO = "git@github.com:esmf-org/esmf-test-summary.git"
+SUMMARIES_REPO = PROD_REPO if is_prod else DEV_REPO
 
 # Machines
 MACHINE_NAME_LIST = sorted(
