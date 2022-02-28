@@ -697,4 +697,4 @@ def get_branch_hashes(job, git) -> Sequence[Any]:
         for line in result.stdout.split("\n")
         if sanitize_branch_name(job.branch_name) in line and job.machine_name in line
     ]
-    return UniqueList((Hash(x) for x in _stdout if Hash(x) is not None))[: job.qty]
+    return UniqueList((Hash(x) for x in _stdout if Hash(x) is not ""))[: job.qty]
