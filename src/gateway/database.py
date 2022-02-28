@@ -6,7 +6,6 @@ Database interaction layer
 author: Ryan Long <ryan.long@noaa.gov>
 """
 
-import hashlib
 import datetime
 import pathlib
 import sqlite3
@@ -17,12 +16,12 @@ import abc
 
 SummaryRow = collections.namedtuple(
     "SummaryRow",
-    "branch, host, compiler, c_version, mpi, m_version, o_g, os, unit_pass, unit_fail, system_pass, system_fail, example_pass, example_fail, nuopc_pass, nuopc_fail, build_passed, hash, modified, id",
+    "branch, host, compiler, c_version, mpi, m_version, o_g, os, unit_pass, unit_fail, system_pass, system_fail, example_pass, example_fail, nuopc_pass, nuopc_fail, build_passed, artifacts_hash, branch_hash, modified",
 )
 
 SummaryRowFormatted = collections.namedtuple(
     "SummaryRowFormatted",
-    "branch, host, compiler, c_version, mpi, m_version, o_g, os, build, u_pass, u_fail, s_pass, s_fail, e_pass, e_fail, nuopc_pass, nuopc_fail, hash, modified",
+    "branch, host, compiler, c_version, mpi, m_version, o_g, os, build, u_pass, u_fail, s_pass, s_fail, e_pass, e_fail, nuopc_pass, nuopc_fail, artifacts_hash, modified",
 )
 
 
@@ -35,7 +34,7 @@ class Database(abc.ABC):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def insert_rows(self, data: List[Any], _hash):
+    def insert_rows(self, data: List[Any]) -> int:
         """inserts rows"""
         raise NotImplementedError
 
@@ -54,17 +53,20 @@ class Archive(Database):
     def create_table(self):
         cur = self.con.cursor()
         cur.execute(
-            """CREATE TABLE if not exists Summaries (branch, host, compiler, c_version, mpi, m_version, o_g, os, u_pass, u_fail, s_pass, s_fail, e_pass, e_fail, nuopc_pass, nuopc_fail, build, hash, modified DATETIME DEFAULT CURRENT_TIMESTAMP, id PRIMARY KEY)"""
+            """CREATE TABLE if not exists Summaries (branch, host, compiler, c_version, mpi, m_version, o_g, os, u_pass, u_fail, s_pass, s_fail, e_pass, e_fail, nuopc_pass, nuopc_fail, build, artifacts_hash PRIMARY KEY, branch_hash, modified DATETIME DEFAULT CURRENT_TIMESTAMP)"""
         )
-        cur.execute("""CREATE INDEX if not exists summary_id_idx ON Summaries (id)""")
+        cur.execute(
+            """CREATE INDEX if not exists summary_branch_hash_idx ON Summaries (branch_hash)"""
+        )
         self.con.commit()
 
-    def insert_rows(self, data: List[Dict[str, Any]], _hash):
+    def insert_rows(self, data: List[Dict[str, Any]]) -> int:
         self.create_table()
-        rows = to_summary_rows(
-            data,
-            str(_hash),
-            modified=datetime.datetime.now().strftime("%m/%d/%Y_%H:%M:%S"),
+        rows = list(
+            to_summary_rows(
+                data,
+                modified=datetime.datetime.now().strftime("%m/%d/%Y_%H:%M:%S"),
+            )
         )
         cur = self.con.cursor()
         cur.executemany(
@@ -72,32 +74,31 @@ class Archive(Database):
             rows,
         )
         self.con.commit()
+        return cur.rowcount
 
     def fetch_rows_by_hash(self, _hash: str):
         cur = self.con.cursor()
         cur.execute(
-            """SELECT branch, host, compiler, c_version, mpi, m_version, o_g, os, build, u_pass, u_fail, s_pass, s_fail, e_pass, e_fail, nuopc_pass, nuopc_fail, hash, modified FROM Summaries WHERE hash = ?""",
+            """SELECT branch, host, compiler, c_version, mpi, m_version, o_g, os, build, u_pass, u_fail, s_pass, s_fail, e_pass, e_fail, nuopc_pass, nuopc_fail, artifacts_hash, modified FROM Summaries WHERE branch_hash = ?""",
             (str(_hash),),
         )
         return (SummaryRowFormatted(*item) for item in cur.fetchall())
 
 
-def to_summary_row(item: Dict[str, Any], _hash: str, modified: str):
+def to_summary_row(item: Dict[str, Any], modified: str):
     """converts dict to SummaryRow"""
-    return SummaryRow(
-        **item, hash=str(_hash), modified=modified, id=generate_id(item, _hash)
-    )
+    return SummaryRow(**item, modified=modified)
 
 
 def to_summary_rows(
-    data: List[Dict[str, Any]], _hash, modified: str
+    data: List[Dict[str, Any]], modified: str
 ) -> Generator[SummaryRow, None, None]:
     """returns a generator of summary rows"""
-    return (to_summary_row(item, str(_hash), modified) for item in data)
+    return (to_summary_row(item, modified) for item in data)
 
 
-def generate_id(item: Dict[str, Any], _hash) -> str:
-    """generate an md5 hash from unique row data"""
-    return hashlib.md5(
-        f"{item['branch']}{item['host']}{item['os']}{item['compiler']}{item['c_version']}{item['mpi']}{item['m_version'].lower()}{item['o_g']}{str(_hash)}".encode()
-    ).hexdigest()
+# def generate_id(item: Dict[str, Any]) -> str:
+#     """generate an md5 hash from unique row data"""
+#     return hashlib.md5(
+#         f"{item['branch']}{item['host']}{item['os']}{item['compiler']}{item['c_version']}{item['mpi']}{item['m_version'].lower()}{item['o_g']}{item['hash']}".encode()
+#     ).hexdigest()

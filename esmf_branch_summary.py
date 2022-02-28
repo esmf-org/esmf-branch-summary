@@ -20,45 +20,11 @@ import tempfile
 import timeit
 
 
-from src import compass as _compass
+from src import compass as _compass, constants
 from src import git as _git
 from src import view as _view
 from src import job as _job
 from src.gateway import database as _gateway
-
-
-MACHINE_NAME_LIST = sorted(
-    [
-        "cheyenne",
-        "hera",
-        "orion",
-        "jet",
-        "gaea",
-        "discover",
-        "chianti",
-        "acorn",
-        "gaffney",
-        "izumi",
-        "koehr",
-        "onyx",
-    ]
-)
-
-
-class BranchSummaryGateway:
-    """represents gateways needed"""
-
-    def __init__(
-        self,
-        git_artifacts: _git.Git,
-        git_summaries: _git.Git,
-        archive: _gateway.Database,
-        compass: _compass.Compass,
-    ):
-        self.git_artifacts = git_artifacts
-        self.git_summaries = git_summaries
-        self.archive = archive
-        self.compass = compass
 
 
 def handle_logging(args):
@@ -99,7 +65,19 @@ def signal_handler(_, __):
     sys.exit(0)
 
 
+def get_temp_dir() -> pathlib.Path:
+    """creates disposable space in the os temp area"""
+    temp_dir = os.path.join(
+        os.path.abspath(tempfile.gettempdir()), constants.DEFAULT_TEMP_SPACE_NAME
+    )
+    if os.path.exists(temp_dir):
+        shutil.rmtree(temp_dir)
+    os.mkdir(temp_dir)
+    return pathlib.Path(temp_dir)
+
+
 def main():
+
     """main point of execution"""
     starttime = timeit.default_timer()
     signal.signal(signal.SIGINT, signal_handler)
@@ -110,30 +88,42 @@ def main():
     logging.info("starting...")
     logging.debug("args are : %s", args)
 
-    root = pathlib.Path(__file__)
+    # setup compass
+    root = pathlib.Path(os.path.abspath(__file__))
     repopath = pathlib.Path(os.path.abspath(args.repo_path))
-
     compass = _compass.Compass.from_path(root, repopath)
+
+    # archive instance
     archive = _gateway.Archive(pathlib.Path(compass.archive_path))
+
+    # git artifacts instance
     git_artifacts = _git.Git(pathlib.Path(compass.repopath))
-    temp_dir = os.path.join(tempfile.gettempdir(), "esmf_branch_summary_space")
-    if os.path.exists(temp_dir):
-        shutil.rmtree(temp_dir)
-    os.mkdir(temp_dir)
-    git_summaries = _git.from_clone(
-        "git@github.com:esmf-org/esmf-test-summary.git", temp_dir
+    logging.debug("pulling artifacts")
+    git_artifacts.pull()
+
+    temp_dir = get_temp_dir()
+
+    # git summaries instance
+    logging.debug("cloning summaries")
+    git_summaries = _git.from_shallow_clone(
+        constants.SUMMARIES_REPO,
+        pathlib.Path(temp_dir),
     )
+    logging.debug("pulling summaries")
+    git_summaries.pull()
 
     processor = _job.Processor(
-        MACHINE_NAME_LIST,
+        constants.MACHINE_NAME_LIST,
         args.branches,
         args.number,
-        BranchSummaryGateway(git_artifacts, git_summaries, archive, compass),
+        _job.processor.BranchSummaryGateway(
+            git_artifacts, git_summaries, archive, compass
+        ),
     )
     logging.info(
         "itterating over %s branches in %s machines over %s most recent branches",
         len(args.branches),
-        len(MACHINE_NAME_LIST),
+        len(constants.MACHINE_NAME_LIST),
         args.number,
     )
     processor.run_jobs()

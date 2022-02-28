@@ -6,12 +6,16 @@ Git CLI interaction layer
 author: Ryan Long <ryan.long@noaa.gov>
 """
 
+
 import logging
 import os
-import shutil
+
 import subprocess
 import pathlib
 from typing import Any, List, Union
+
+
+LOG_FORMAT_HASH = "--format=%H"
 
 
 class Git:
@@ -171,35 +175,58 @@ class Git:
 
     def clone(self, url, target_path=None) -> subprocess.CompletedProcess:
         """git clone <url> <target_path>"""
-        if os.path.exists(self.repopath):
-            shutil.rmtree(self.repopath)
-        os.mkdir(self.repopath)
-        cmd = ["git", "clone", url, target_path]
+        cmd = ["git", "clone", "--depth=500", url, target_path]
         return self._command_safe(cmd, target_path)
 
-    def merge(self, machine_name) -> subprocess.CompletedProcess:
+    def merge(self, machine_name: str) -> subprocess.CompletedProcess:
         """git merge <machine_name>"""
         cmd = ["git", "merge", f"{machine_name}"]
         return self._command_safe(cmd)
 
-    def rebase(self, branch_name) -> subprocess.CompletedProcess:
+    def rebase(self, branch_name: str) -> subprocess.CompletedProcess:
         """git rebase origin/<branch_name>"""
         return self._command_safe(["git", "rebase", f"origin/{branch_name}"])
 
-    def log(self, branch_name) -> subprocess.CompletedProcess:
-        """git log --format=%B <branch_name>"""
-        return self._command_safe(["git", "log", "--format=%B", f"{branch_name}"])
+    def log(self, *args) -> subprocess.CompletedProcess:
+        """git log <*args>"""
+        cmd = ["git", "log"]
+        if args:
+            for arg in args:
+                cmd.append(arg)
+        return self._command_safe(cmd, self.repopath)
 
 
-def from_clone(url, _path: str):
+def from_shallow_clone(url, _path: pathlib.Path) -> "Git":
     """creates a Git instance from a url"""
-    temp = Git(pathlib.Path(_path))
-    if os.path.exists(_path):
-        shutil.rmtree(_path)
-    os.mkdir(_path)
-    temp.clone(url, _path)
-    temp.repopath = pathlib.Path(os.path.join(_path, "esmf-test-summary"))
+    repopath = pathlib.Path(os.path.join(_path))
+    logging.debug("cloning %s into %s", url, repopath)
+    if not os.path.exists(_path):
+        os.mkdir(_path)
+    temp = Git(pathlib.Path(repopath))
+    try:
+        temp.clone(url, repopath)
+    except GitError:
+        pass
     return temp
+    # shutil.rmtree(_path)
+
+
+def _from_clone(url, _path: pathlib.Path) -> "Git":
+    """creates a Git instance from a url"""
+    repopath = pathlib.Path(os.path.join(_path, extract_parent_dir_name(url)))
+    logging.debug("cloning %s into %s", url, repopath)
+    if not os.path.exists(_path):
+        os.mkdir(_path)
+    temp = Git(pathlib.Path(_path))
+    temp.clone(url, _path)
+    return temp
+    # shutil.rmtree(_path)
+
+
+def extract_parent_dir_name(value: str):
+    """figures out what the clone directory will be called"""
+    # "git@github.com:esmf-org/esmf-test-summary.git"
+    return value.split("/")[-1].split(".")[0]
 
 
 class Error(Exception):
