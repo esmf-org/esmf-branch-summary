@@ -28,7 +28,7 @@ class Hash(collections.UserString):
                 return re.findall(pattern, value)[0]
             except IndexError:
                 continue
-        raise ValueError(f"could not parse [{value}]")
+        return ""
 
     def patterns(self) -> List[str]:
         """list of regex patterns used for extrapolating hash"""
