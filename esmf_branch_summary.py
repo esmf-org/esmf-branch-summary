@@ -81,7 +81,7 @@ def main():
     repopath = pathlib.Path(os.path.abspath(args.repo_path))
     compass = _compass.Compass.from_path(root, repopath)
 
-    archive = _gateway.Archive(str(compass.archive_path))
+    archive = _gateway.Archive(pathlib.Path(compass.archive_path))
     git_artifacts = _git.Git(pathlib.Path(compass.repopath))
     temp_dir = os.path.join(
         os.path.abspath(tempfile.gettempdir()), constants.DEFAULT_TEMP_SPACE_NAME

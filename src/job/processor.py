@@ -460,9 +460,9 @@ def get_matching_summaries(
 
 def find_files(
     _root_path: pathlib.Path,
-    value_search_strings: Union[List[str], None] = None,
-    file_name_search_strings: Union[List[str], None] = None,
-    file_name_ignore_strings: Union[List[str], None] = None,
+    value_search_strings: Union[None, List[str]] = None,
+    file_name_search_strings: Union[None, List[str]] = None,
+    file_name_ignore_strings: Union[None, List[str]] = None,
 ) -> List[str]:
     """finds files containing all values_search_strings where file path
     includes file_name_search_strings but does not contain any
