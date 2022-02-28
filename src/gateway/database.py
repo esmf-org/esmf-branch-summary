@@ -46,7 +46,7 @@ class Database(abc.ABC):
 class Archive(Database):
     """persists data to a sqlite3 database"""
 
-    def __init__(self, db_path):
+    def __init__(self, db_path: str):
         self.con = sqlite3.connect(db_path)
 
     def create_table(self):
