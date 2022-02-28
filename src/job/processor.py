@@ -126,11 +126,14 @@ class Processor:
         """extracts branch names from git log"""
         if not self._branches:
             self.gateway.git_artifacts.fetch()
-            self._branches = list({
-                self.extract_branch_from_log_line(item)
-                for item in self.gateway.git_artifacts.log("--all").stdout.split("\n")
-            })
-
+            self._branches = list(
+                {
+                    self.extract_branch_from_log_line(item)
+                    for item in self.gateway.git_artifacts.log("--all").stdout.split(
+                        "\n"
+                    )
+                }
+            )
         return self._branches
 
     @property
@@ -138,7 +141,11 @@ class Processor:
         """return branches to be summarized"""
         if not self._branches:
             self.gateway.git_artifacts.fetch()
-            self._branches = self.gateway.git_artifacts.snapshot(self.REPO_URL)
+            try:
+                self._branches = self.gateway.git_artifacts.snapshot(self.REPO_URL)
+            except subprocess.CalledProcessError:
+                logging.debug("failed to fetch branches via snapshot. parsing logs...")
+                self._branches = self.find_branch_names()
         return self._branches
 
     @property
