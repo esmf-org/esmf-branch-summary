@@ -22,7 +22,7 @@ from tabulate import tabulate
 from src import constants, file
 from src.compass import Compass
 from src.gateway.database import Database, SummaryRowFormatted
-from src.git import Git
+from src.git import Git, GitError
 from src.job.hash import Hash
 from src.job.list import UniqueList
 
@@ -143,7 +143,7 @@ class Processor:
             self.gateway.git_artifacts.fetch()
             try:
                 self._branches = self.gateway.git_artifacts.snapshot(self.REPO_URL)
-            except subprocess.CalledProcessError:
+            except GitError:
                 logging.debug("failed to fetch branches via snapshot. parsing logs...")
                 self._branches = self.find_branch_names()
         return self._branches
