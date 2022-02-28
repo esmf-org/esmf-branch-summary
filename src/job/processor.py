@@ -303,7 +303,6 @@ class Processor:
                 continue
             self.send_summary_to_repo(job, summary, _hash, idx == 0)
 
-    @functools.lru_cache
     def _fetch_git_log(self):
         """returns git log for esmf"""
         results = self.gateway.git_esmf.log("--all", "--format=%H")
