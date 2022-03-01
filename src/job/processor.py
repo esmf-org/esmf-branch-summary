@@ -7,6 +7,7 @@ author: Ryan Long <ryan.long@noaa.gov>
 import bisect
 import collections
 import csv
+import datetime
 import functools
 import itertools
 import logging
@@ -331,7 +332,16 @@ class Processor:
     def write_files(self, _hash: Hash, file_path: str, is_latest: bool = False):
         """writes all file types required to disk"""
         logging.debug("writing files %s", file_path)
-        data = list([item for item in self.fetch_summary_file_contents(_hash)])
+        data: List[Dict[str, Any]] = list(
+            [
+                {
+                    **item,
+                    **{"modified": datetime.datetime.fromtimestamp(item["modified"])},
+                }
+                for item in self.fetch_summary_file_contents(_hash)
+            ]
+        )
+
         if not data:
             logging.warning("no new summary data collected")
             return
@@ -699,4 +709,4 @@ def get_branch_hashes(job, git) -> Sequence[Any]:
         for line in result.stdout.split("\n")
         if sanitize_branch_name(job.branch_name) in line and job.machine_name in line
     ]
-    return UniqueList((Hash(x) for x in _stdout if Hash(x) is not ""))[: job.qty]
+    return UniqueList((Hash(x) for x in _stdout if Hash(x) != ""))[: job.qty]

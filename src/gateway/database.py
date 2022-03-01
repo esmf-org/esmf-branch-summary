@@ -6,10 +6,10 @@ Database interaction layer
 author: Ryan Long <ryan.long@noaa.gov>
 """
 
-import datetime
 import pathlib
 import sqlite3
 import collections
+import time
 from typing import Any, Dict, Generator, List
 import abc
 
@@ -65,7 +65,7 @@ class Archive(Database):
         rows = list(
             to_summary_rows(
                 data,
-                modified=datetime.datetime.now().strftime("%m/%d/%Y_%H:%M:%S"),
+                modified=str(time.time()),
             )
         )
         cur = self.con.cursor()
