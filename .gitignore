@@ -13,4 +13,3 @@ summaries.db
 *log
 error_artifacts/
 local_test.sh
-update_repos.json
