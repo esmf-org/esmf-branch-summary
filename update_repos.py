@@ -16,11 +16,14 @@ from typing import List
 from src.git import Git
 
 ROOT = pathlib.Path(__file__).parent.resolve()
+REPO_PATH = "git@github.com:esmf-org/esmf-branch-summary.git"
+
+LOG_FILE_PATH = os.path.join(ROOT, f"{os.path.basename(__file__)[:-3]}.log")
 
 logging.basicConfig(
     level=logging.DEBUG,
     format="%(asctime)s %(name)-12s %(levelname)-8s %(message)s",
-    filename=os.path.join(ROOT, f"{os.path.basename(__file__)[:-3]}.log"),
+    filename=LOG_FILE_PATH,
     filemode="w",
 )
 
@@ -64,6 +67,10 @@ def main():
     for _path in current_machine(hostname(), machines).update_paths:
         logging.debug("pulling [%s]", _path)
         Git(_path).pull()
+    summary_repo = Git(pathlib.Path(REPO_PATH))
+    summary_repo.add(LOG_FILE_PATH)
+    summary_repo.commit(f"update {LOG_FILE_PATH}")
+    summary_repo.push()
 
     logging.info("finished")
 
