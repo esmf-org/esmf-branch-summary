@@ -1,0 +1,12 @@
+{
+  "machines": [
+    {
+      "machine_name": "cheyenne",
+      "hostname_pattern": "cheyenne*",
+      "update_paths": [
+        "/home/rlong/Sandbox/esmf-test-scripts",
+        "/home/rlong/Sandbox/esmf-branch-summary"
+      ]
+    }
+  ]
+}
