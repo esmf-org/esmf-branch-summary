@@ -142,8 +142,11 @@ class Git:
                 logging.info("%s does not exist; force flag is %s", branch_name, force)
         return self._command_safe(cmd, self.repopath)
 
-    def commit(self, message) -> subprocess.CompletedProcess:
+    def commit(self, message, force=False) -> subprocess.CompletedProcess:
         """git commit -m {message}"""
+        cmd = ["git", "commit", "-m", f"'{message}'"]
+        if force:
+            cmd.insert(2, "-f")
         return self._command_safe(
             ["git", "commit", "-m", f"'{message}'"], self.repopath
         )
