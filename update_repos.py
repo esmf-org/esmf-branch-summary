@@ -63,7 +63,9 @@ def main():
     config = load_config(CONFIG_PATH)
     machines = [Machine(**x) for x in config["machines"]]
 
-    for _path in current_machine(hostname(), machines).update_paths:
+    machine = current_machine(hostname(), machines)
+    logging.debug("identified machine as [%s]", machine.machine_name)
+    for _path in machine.update_paths:
         logging.debug("pulling [%s]", _path)
         Git(_path).pull()
     summary_repo = Git(pathlib.Path(".").resolve())
