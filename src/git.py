@@ -202,25 +202,23 @@ def from_shallow_clone(url, _path: pathlib.Path) -> "Git":
     logging.debug("cloning %s into %s", url, repopath)
     if not os.path.exists(_path):
         os.mkdir(_path)
-    temp = Git(pathlib.Path(repopath))
+    repo = Git(pathlib.Path(repopath))
     try:
-        temp.clone(url, repopath)
+        repo.clone(url, repopath)
     except GitError:
         pass
-    return temp
-    # shutil.rmtree(_path)
+    return repo
 
 
-def _from_clone(url, _path: pathlib.Path) -> "Git":
+def from_clone(url, _path: pathlib.Path) -> "Git":
     """creates a Git instance from a url"""
     repopath = pathlib.Path(os.path.join(_path, extract_parent_dir_name(url)))
     logging.debug("cloning %s into %s", url, repopath)
     if not os.path.exists(_path):
         os.mkdir(_path)
-    temp = Git(pathlib.Path(_path))
-    temp.clone(url, _path)
-    return temp
-    # shutil.rmtree(_path)
+    repo = Git(pathlib.Path(_path))
+    repo.clone(url, _path)
+    return repo
 
 
 def extract_parent_dir_name(value: str):
