@@ -1,0 +1,5 @@
+2022-03-03 02:01:52,365 root         INFO     starting...
+2022-03-03 02:01:52,365 root         DEBUG    loading config [update_repos.json]
+2022-03-03 02:01:52,366 root         DEBUG    fetching hostname from os
+2022-03-03 02:01:52,366 root         DEBUG    pulling [/home/role.esmfmaint/scratch/esmf-test-scripts]
+2022-03-03 02:01:52,779 root         DEBUG    pulling [/home/role.esmfmaint/scratch/esmf-branch-summary]
