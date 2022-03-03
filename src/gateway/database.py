@@ -16,12 +16,12 @@ import abc
 
 SummaryRow = collections.namedtuple(
     "SummaryRow",
-    "branch, host, compiler, c_version, mpi, m_version, o_g, os, unit_pass, unit_fail, system_pass, system_fail, example_pass, example_fail, nuopc_pass, nuopc_fail, build_passed, artifacts_hash, branch_hash, modified",
+    "branch, host, compiler, c_version, mpi, m_version, o_g, os, unit_pass, unit_fail, system_pass, system_fail, example_pass, example_fail, nuopc_pass, nuopc_fail, build_passed, netCDF_C, netCDF_F, artifacts_hash, branch_hash, modified",
 )
 
 SummaryRowFormatted = collections.namedtuple(
     "SummaryRowFormatted",
-    "branch, host, compiler, c_version, mpi, m_version, o_g, os, build, u_pass, u_fail, s_pass, s_fail, e_pass, e_fail, nuopc_pass, nuopc_fail, artifacts_hash, modified",
+    "branch, host, compiler, c_version, mpi, m_version, o_g, os, build, u_pass, u_fail, s_pass, s_fail, e_pass, e_fail, nuopc_pass, nuopc_fail, netcdf_c, netcdf_f, artifacts_hash, modified",
 )
 
 
@@ -53,7 +53,7 @@ class Archive(Database):
     def create_table(self):
         cur = self.con.cursor()
         cur.execute(
-            """CREATE TABLE if not exists Summaries (branch, host, compiler, c_version, mpi, m_version, o_g, os, u_pass, u_fail, s_pass, s_fail, e_pass, e_fail, nuopc_pass, nuopc_fail, build, artifacts_hash PRIMARY KEY, branch_hash, modified DATETIME DEFAULT CURRENT_TIMESTAMP)"""
+            """CREATE TABLE if not exists Summaries (branch, host, compiler, c_version, mpi, m_version, o_g, os, u_pass, u_fail, s_pass, s_fail, e_pass, e_fail, nuopc_pass, nuopc_fail, build, netcdf_c, netcdf_f, artifacts_hash PRIMARY KEY, branch_hash, modified DATETIME DEFAULT CURRENT_TIMESTAMP)"""
         )
         cur.execute(
             """CREATE INDEX if not exists summary_branch_hash_idx ON Summaries (branch_hash)"""
@@ -70,7 +70,7 @@ class Archive(Database):
         )
         cur = self.con.cursor()
         cur.executemany(
-            "INSERT OR REPLACE INTO summaries VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+            "INSERT OR REPLACE INTO summaries VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
             rows,
         )
         self.con.commit()
@@ -79,7 +79,7 @@ class Archive(Database):
     def fetch_rows_by_hash(self, _hash: str):
         cur = self.con.cursor()
         cur.execute(
-            """SELECT branch, host, compiler, c_version, mpi, m_version, o_g, os, build, u_pass, u_fail, s_pass, s_fail, e_pass, e_fail, nuopc_pass, nuopc_fail, artifacts_hash, modified FROM Summaries WHERE branch_hash = ?""",
+            """SELECT branch, host, compiler, c_version, mpi, m_version, o_g, os, build, u_pass, u_fail, s_pass, s_fail, e_pass, e_fail, nuopc_pass, nuopc_fail,netcdf_c, netcdf_f, artifacts_hash, modified FROM Summaries WHERE branch_hash = ?""",
             (str(_hash),),
         )
         return (SummaryRowFormatted(*item) for item in cur.fetchall())
