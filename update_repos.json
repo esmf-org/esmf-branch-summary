@@ -4,8 +4,8 @@
       "machine_name": "cheyenne",
       "hostname_pattern": "cheyenne*",
       "update_paths": [
-        "/home/rlong/Sandbox/esmf-test-scripts",
-        "/home/rlong/Sandbox/esmf-branch-summary"
+        "/glade/u/home/rlong/scratch/esmf-testing/esmf-branch-summary",
+        "/glade/u/home/rlong/scratch/esmf-testing/esmf-test-scripts"
       ]
     },
     {
