@@ -109,12 +109,14 @@ class Git:
         """git fetch"""
         return self._command_safe(["git", "fetch"], self.repopath)
 
-    def add(self, _file_path=None) -> subprocess.CompletedProcess:
+    def add(self, _file_path=None, force=False) -> subprocess.CompletedProcess:
         """
         git add --all
         git add <_file_path>
         """
         cmd = ["git", "add", "--all"]
+        if force:
+            cmd.append("-f")
         if _file_path is not None:
             cmd = ["git", "add", _file_path]
         return self._command_safe(cmd, self.repopath)
