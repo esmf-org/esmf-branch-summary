@@ -7,6 +7,14 @@
         "/home/rlong/Sandbox/esmf-test-scripts",
         "/home/rlong/Sandbox/esmf-branch-summary"
       ]
+    },
+    {
+      "machine_name": "hera",
+      "hostname_pattern": "hfe*",
+      "update_paths": [
+        "/home/role.esmfmaint/scratch/esmf-test-scripts",
+        "/home/role.esmfmaint/scratch/esmf-branch-summary"
+      ]
     }
   ]
 }
