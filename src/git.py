@@ -115,10 +115,10 @@ class Git:
         git add <_file_path>
         """
         cmd = ["git", "add", "--all"]
-        if force:
-            cmd.append("-f")
         if _file_path is not None:
             cmd = ["git", "add", _file_path]
+        if force:
+            cmd.insert(2, "-f")
         return self._command_safe(cmd, self.repopath)
 
     def checkout(
