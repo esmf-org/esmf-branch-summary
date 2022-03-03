@@ -163,12 +163,16 @@ class Git:
             cmd.append(branch)
         return self._command_safe(cmd, self.repopath)
 
-    def push(self, destination="origin", branch=None) -> subprocess.CompletedProcess:
+    def push(
+        self, destination="origin", branch=None, force=False
+    ) -> subprocess.CompletedProcess:
         """
         git push <destination>
         git push <destination> <branch>
         """
         cmd = ["git", "push", destination]
+        if force:
+            cmd.append("-f")
         if branch is not None:
             cmd.append(branch)
         return self._command_safe(cmd, self.repopath)
