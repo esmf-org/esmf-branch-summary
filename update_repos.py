@@ -16,7 +16,6 @@ from typing import List
 from src.git import Git
 
 ROOT = pathlib.Path(__file__).parent.resolve()
-REPO_PATH = "git@github.com:esmf-org/esmf-branch-summary.git"
 
 LOG_FILE_PATH = os.path.join(ROOT, f"{os.path.basename(__file__)[:-3]}.log")
 
@@ -67,7 +66,7 @@ def main():
     for _path in current_machine(hostname(), machines).update_paths:
         logging.debug("pulling [%s]", _path)
         Git(_path).pull()
-    summary_repo = Git(pathlib.Path(REPO_PATH))
+    summary_repo = Git(pathlib.Path(".").resolve())
     summary_repo.add(LOG_FILE_PATH)
     summary_repo.commit(f"update {LOG_FILE_PATH}")
     summary_repo.push()
