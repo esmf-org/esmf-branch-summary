@@ -13,3 +13,4 @@ summaries.db
 *log
 error_artifacts/
 local_test.sh
+update.sh
