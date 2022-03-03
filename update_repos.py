@@ -68,7 +68,7 @@ def main():
         Git(_path).pull()
     summary_repo = Git(pathlib.Path(".").resolve())
     summary_repo.add(LOG_FILE_PATH)
-    summary_repo.commit(f"update {LOG_FILE_PATH}")
+    summary_repo.commit(f"update {LOG_FILE_PATH}", force=True)
     summary_repo.push()
 
     logging.info("finished")
