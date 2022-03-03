@@ -14,18 +14,14 @@ from typing import List
 
 from src.git import Git
 
-ESMF_BRANCH_SUMMARY = "git@github.com:esmf-org/esmf-branch-summary.git"
-ESMF_TEST_SCRIPTS = "/home/rlong/Sandbox/esmf-test-scripts"
-
-root = pathlib.Path(__file__).parent.resolve()
+ROOT = pathlib.Path(__file__).parent.resolve()
 
 logging.basicConfig(
     level=logging.DEBUG,
     format="%(asctime)s %(name)-12s %(levelname)-8s %(message)s",
-    filename=os.path.join(root, f"{os.path.basename(__file__)[:-3]}.log"),
+    filename=os.path.join(ROOT, f"{os.path.basename(__file__)[:-3]}.log"),
     filemode="w",
 )
-
 
 Machine = collections.namedtuple(
     "Machine", ["machine_name", "hostname_pattern", "update_paths"]
