@@ -10,6 +10,7 @@ import logging
 import os
 import pathlib
 import re
+import socket
 from typing import List
 
 from src.git import Git
@@ -37,8 +38,7 @@ def load_config(_path: pathlib.Path):
 def hostname() -> str:
     """returns os hostname"""
     logging.debug("fetching hostname from os")
-    return "cheyenne3"
-    # return socket.gethostname()
+    return socket.gethostname()
 
 
 def current_machine(_hostname: str, machines: List[Machine]) -> Machine:
