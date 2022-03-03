@@ -106,7 +106,7 @@ def main():
     # git summaries instance
     logging.debug("cloning summaries")
     git_summaries = _git.from_shallow_clone(
-        constants.SUMMARIES_REPO,
+        constants.REPO_ESMF_BRANCH_SUMMARY,
         pathlib.Path(temp_dir),
     )
     logging.debug("pulling summaries")

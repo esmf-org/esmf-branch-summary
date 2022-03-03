@@ -118,12 +118,12 @@ class Summary(ReadOnly):
 
 def generate_link(**kwds) -> str:
     """generates a link to github to jump to the _hash passed in"""
-    return f"[artifacts](https://github.com/esmf-org/esmf-test-artifacts/tree/{kwds['hash']})"
+    return f"[artifacts]({constants.REPO_ESMF_TEST_ARTIFACTS}/tree/{kwds['hash']})"
 
 
 def generate_link_old(**kwds) -> str:
     """generates a link to github to jump to the _hash passed in"""
-    return f"[artifacts](https://github.com/esmf-org/esmf-test-artifacts/tree/{kwds['host'].replace('/', '_')}/{kwds['branch'].replace('/', '_')}/{kwds['host'].replace('/', '_')}/{kwds['compiler']}/{kwds['c_version']}/{kwds['o_g']}/{kwds['mpi']}/{kwds['m_version'].lower()})"
+    return f"[artifacts]({constants.REPO_ESMF_TEST_ARTIFACTS}/tree/{kwds['host'].replace('/', '_')}/{kwds['branch'].replace('/', '_')}/{kwds['host'].replace('/', '_')}/{kwds['compiler']}/{kwds['c_version']}/{kwds['o_g']}/{kwds['mpi']}/{kwds['m_version'].lower()})"
 
 
 def sort_file_summary_content(data: List[Any]) -> List[Any]:

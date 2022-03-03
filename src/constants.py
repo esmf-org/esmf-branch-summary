@@ -15,9 +15,12 @@ DEFAULT_FILE_ENCODING = "ISO-8859-1"
 DEFAULT_TEMP_SPACE_NAME = "esmf_branch_summary_space"
 
 # Repositories
-DEV_REPO = "git@github.com:ryanlong1004/esmf-test-summary.git"
-PROD_REPO = "git@github.com:esmf-org/esmf-test-summary.git"
-SUMMARIES_REPO = PROD_REPO if is_prod else DEV_REPO
+REPO_ESMF_TEST_ARTIFACTS="https://github.com/esmf-org/esmf-test-artifacts"
+
+# Repositories
+_DEV_REPO = "git@github.com:ryanlong1004/esmf-test-summary.git"
+_PROD_REPO = "git@github.com:esmf-org/esmf-test-summary.git"
+REPO_ESMF_BRANCH_SUMMARY = _PROD_REPO if is_prod else _DEV_REPO
 
 # Machines
 MACHINE_NAME_LIST = sorted(
