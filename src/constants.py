@@ -35,7 +35,7 @@ MACHINE_NAME_LIST = sorted(
         "acorn",
         "gaffney",
         "izumi",
-        "koehr",
+        # "koehr",
         "onyx",
     ]
 )
