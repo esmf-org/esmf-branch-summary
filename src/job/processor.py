@@ -46,8 +46,8 @@ TestResult = collections.namedtuple(
         "m_version",
         "o_g",
         "os",
-        "netCDF_C",
-        "netCDF_F",
+        "netcdf_c",
+        "netcdf_f",
         "unit_pass",
         "unit_fail",
         "system_pass",
@@ -388,11 +388,11 @@ class Processor:
             )
         return results
 
-        
     def fetch_summary_file_contents(self, _hash: Hash):
         """fetches the contents to create a summary file based on _hash"""
-        return list(row.formatted() for row in self.gateway.archive.fetch_rows_by_hash(_hash))
-        
+        return list(
+            row.formatted() for row in self.gateway.archive.fetch_rows_by_hash(_hash)
+        )
 
 
 def write_file_md(data: List[Dict[str, str]], file_path: str) -> None:
@@ -555,7 +555,7 @@ def fetch_job_attributes(_path: pathlib.Path) -> JobAttributes:
 
 
 BuildData = collections.namedtuple(
-    "BuildData", ["build_passed", "netCDF_C", "netCDF_F"]
+    "BuildData", ["build_passed", "netcdf_c", "netcdf_f"]
 )
 
 

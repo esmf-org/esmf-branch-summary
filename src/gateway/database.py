@@ -19,7 +19,7 @@ from src import file
 
 SummaryRowData = collections.namedtuple(
     "SummaryRowData",
-    "branch, host, compiler, c_version, mpi, m_version, o_g, os, unit_pass, unit_fail, system_pass, system_fail, example_pass, example_fail, nuopc_pass, nuopc_fail, build_passed, artifacts_hash, branch_hash, modified",
+    "branch, host, compiler, c_version, mpi, m_version, o_g, os, unit_pass, unit_fail, system_pass, system_fail, example_pass, example_fail, nuopc_pass, nuopc_fail, build_passed, netcdf_c, netcdf_f, artifacts_hash, branch_hash, modified",
 )
 
 SummaryRowFormatted = collections.namedtuple(
