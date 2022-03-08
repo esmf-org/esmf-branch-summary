@@ -93,8 +93,8 @@ class SummaryRow:
             k: "pending" if v == constants.QUEUED else v
             for k, v in self.ordered().items()
         }
-        # replace 1/0 with Pass/Fail
-        parsed_row["build"] = "Pass" if self.build_passed == constants.PASS else "Fail"
+        # replace 1/0 with pass/fail
+        parsed_row["build"] = "pass" if self.build_passed == constants.PASS else "fail"
         # generate link for github
         parsed_row["artifacts_hash"] = file.generate_link(
             hash=self.artifacts_hash, path=self.relative_path
