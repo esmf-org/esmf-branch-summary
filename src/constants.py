@@ -15,7 +15,7 @@ DEFAULT_FILE_ENCODING = "ISO-8859-1"
 DEFAULT_TEMP_SPACE_NAME = "esmf_branch_summary_space"
 
 # Repositories
-REPO_ESMF_TEST_ARTIFACTS = "https://github.com/esmf-org/esmf-test-artifacts-new"
+REPO_ESMF_TEST_ARTIFACTS = "https://github.com/esmf-org/esmf-test-artifacts"
 
 # Repositories
 _DEV_REPO = "git@github.com:ryanlong1004/esmf-test-summary.git"
