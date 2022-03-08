@@ -9,6 +9,7 @@ is_prod = os.environ.get("ESMF_BRANCH_SUMMARIZER_ENV") == "PROD"
 QUEUED = -1
 PASS = 1
 FAIL = 0
+NA = "N/A"
 
 # Defaults
 DEFAULT_FILE_ENCODING = "ISO-8859-1"

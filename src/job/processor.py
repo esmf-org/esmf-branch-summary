@@ -710,7 +710,13 @@ def fetch_build_result(
     """searches through they haystack for the needle"""
     data = {k: needle.get(k, "none").lower() for k in (JobAttributes._fields)}
     try:
-        return haystack[JobAttributes(**data)]
+        build, netcdf_c, netcdf_f = haystack[JobAttributes(**data)]
+        return BuildData(
+            build,
+            constants.NA if netcdf_c == "" else netcdf_c,
+            constants.NA if netcdf_f == "" else netcdf_f,
+        )
+
     except KeyError:
         return BuildData(False, "unknown", "unknown")
 
