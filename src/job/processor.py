@@ -22,7 +22,7 @@ from tabulate import tabulate
 
 from src import constants, file
 from src.compass import Compass
-from src.gateway.database import Database, SummaryRowFormatted
+from src.gateway.database import Database
 from src.git import Git, GitError
 from src.job.hash import Hash
 from src.job.list import UniqueList

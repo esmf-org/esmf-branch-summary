@@ -13,7 +13,6 @@ import logging
 from typing import Any, Dict, Generator, List
 
 from src import constants
-from src.gateway.database import SummaryRowFormatted
 
 
 def _replace(old: str, new: str, target: str):

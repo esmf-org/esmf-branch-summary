@@ -22,11 +22,6 @@ SummaryRowData = collections.namedtuple(
     "branch, host, compiler, c_version, mpi, m_version, o_g, os, unit_pass, unit_fail, system_pass, system_fail, example_pass, example_fail, nuopc_pass, nuopc_fail, build_passed, netcdf_c, netcdf_f, artifacts_hash, branch_hash, modified",
 )
 
-SummaryRowFormatted = collections.namedtuple(
-    "SummaryRowFormatted",
-    "branch, host, compiler, c_version, mpi, m_version, o_g, os, build, u_pass, u_fail, s_pass, s_fail, e_pass, e_fail, nuopc_pass, nuopc_fail, netcdf_c, netcdf_f, artifacts_hash, modified",
-)
-
 
 class SummaryRow:
     """represents a row in the summary table"""
