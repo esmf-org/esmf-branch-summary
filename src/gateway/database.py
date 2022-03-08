@@ -166,7 +166,7 @@ class Archive(Database):
     def fetch_rows_by_hash(self, _hash: str):
         cur = self.con.cursor()
         cur.execute(
-            """SELECT branch, host, compiler, c_version, mpi, m_version, o_g, os, build, u_pass, u_fail, s_pass, s_fail, e_pass, e_fail, nuopc_pass, nuopc_fail, artifacts_hash, modified FROM Summaries WHERE branch_hash = ?""",
+            """SELECT branch, host, compiler, c_version, mpi, m_version, o_g, os, build, u_pass, u_fail, s_pass, s_fail, e_pass, e_fail, nuopc_pass, nuopc_fail, artifacts_hash, modified FROM Summaries WHERE branch_hash = ? ORDER BY branch, host, compiler, c_version, mpi, m_version, o_g""",
             (str(_hash),),
         )
         columns = list(x[0] for x in cur.description)
