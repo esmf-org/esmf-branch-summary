@@ -386,20 +386,8 @@ class Processor:
 
     def fetch_summary_file_contents(self, _hash: Hash):
         """fetches the contents to create a summary file based on _hash"""
-        results = []
-        for item in self.gateway.archive.fetch_rows_by_hash(_hash):
-            results.append(self.parse_summary_file_row(item))
-        return sort_file_summary_content(results)
-
-    def parse_summary_file_row(self, row: SummaryRowFormatted) -> Dict[str, Any]:
-        """formats and replaces values for outputing to summary file"""
-        parsed_row = {
-            k: "pending" if v == constants.QUEUED else v
-            for k, v in row._asdict().items()
-        }
-        parsed_row["build"] = "Pass" if row.build == constants.PASS else "Fail"
-        parsed_row["artifacts_hash"] = file.generate_link(hash=row.artifacts_hash)
-        return parsed_row
+        return list(row.formatted() for row in self.gateway.archive.fetch_rows_by_hash(_hash))
+        
 
 
 def write_file_md(data: List[Dict[str, str]], file_path: str) -> None:
@@ -428,20 +416,6 @@ def write_file_latest(data: List[Any], file_path: str) -> None:
     latest_file_path = file_path[:last_char_index] + "/-latest.md"
     with open(latest_file_path, "w+", newline="") as _file:
         _file.write(table)
-
-
-def sort_file_summary_content(data: List[Any]) -> List[Any]:
-    """sorts the summary file contents"""
-    return sorted(
-        data,
-        key=lambda x: x["branch"]
-        + x["host"]
-        + x["compiler"]
-        + x["c_version"]
-        + x["mpi"]
-        + x["m_version"]
-        + x["o_g"],
-    )
 
 
 def generate_permutations(
