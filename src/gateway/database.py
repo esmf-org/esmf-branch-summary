@@ -81,6 +81,8 @@ class SummaryRow:
         return self.row.get(key, None)
 
     def __getattr__(self, __name: str) -> Any:
+        if __name not in self.row.keys():
+            raise AttributeError(f"attribute not found [{__name}]")
         return self.__getitem__(__name)
 
     def __iter__(self):
@@ -94,7 +96,7 @@ class SummaryRow:
             for k, v in self.ordered().items()
         }
         # replace 1/0 with pass/fail
-        parsed_row["build"] = "pass" if self.build_passed == constants.PASS else "fail"
+        parsed_row["build"] = "pass" if self.build == constants.PASS else "fail"
         # generate link for github
         parsed_row["artifacts_hash"] = file.generate_link(
             hash=self.artifacts_hash, path=self.relative_path
