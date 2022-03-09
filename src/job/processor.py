@@ -699,7 +699,7 @@ def fetch_test_results(file_path: pathlib.Path) -> Dict[str, Any]:
                     )
                     logging.error("message: %s", err)
                     logging.error("line being parsed: %s", value)
-                    results[f"{key_cleaned}_pass"] = "fail"
+                    results[f"{key_cleaned}_pass"] = "pass"
                     results[f"{key_cleaned}_fail"] = "fail"
     return results
 
