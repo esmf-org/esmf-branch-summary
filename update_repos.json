@@ -1,0 +1,20 @@
+{
+  "machines": [
+    {
+      "machine_name": "cheyenne",
+      "hostname_pattern": "cheyenne*",
+      "update_paths": [
+        "/glade/u/home/rlong/scratch/esmf-testing/esmf-branch-summary",
+        "/glade/u/home/rlong/scratch/esmf-testing/esmf-test-scripts"
+      ]
+    },
+    {
+      "machine_name": "hera",
+      "hostname_pattern": "hfe*",
+      "update_paths": [
+        "/home/role.esmfmaint/scratch/esmf-test-scripts",
+        "/home/role.esmfmaint/scratch/esmf-branch-summary"
+      ]
+    }
+  ]
+}

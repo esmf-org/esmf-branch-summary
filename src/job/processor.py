@@ -22,7 +22,7 @@ from tabulate import tabulate
 
 from src import constants, file
 from src.compass import Compass
-from src.gateway.database import Database, SummaryRowFormatted
+from src.gateway.database import Database
 from src.git import Git, GitError
 from src.job.hash import Hash
 from src.job.list import UniqueList
@@ -46,6 +46,8 @@ TestResult = collections.namedtuple(
         "m_version",
         "o_g",
         "os",
+        "netcdf_c",
+        "netcdf_f",
         "unit_pass",
         "unit_fail",
         "system_pass",
@@ -370,36 +372,27 @@ class Processor:
         _hash: Hash,
     ) -> List[TestResult]:
         """takes all of the gathered data and returns a list of the results"""
-        return [
-            TestResult(
-                **fetch_test_results(str(_file.file_path)),
-                build_passed=fetch_build_result(
-                    fetch_test_results(str(_file.file_path)), build_passing_results
-                ),
-                artifacts_hash=self.fetch_file_commit_hash(
-                    pathlib.Path(_file.file_path)
-                ),
-                branch_hash=str(_hash),
+        results = []
+        for _file in matching_summaries:
+            test_results = fetch_test_results(_file.file_path)
+            build_results = fetch_build_result(test_results, build_passing_results)
+            temp = {**test_results, **build_results._asdict()}
+            results.append(
+                TestResult(
+                    **temp,
+                    artifacts_hash=self.fetch_file_commit_hash(
+                        pathlib.Path(_file.file_path)
+                    ),
+                    branch_hash=str(_hash),
+                )
             )
-            for _file in matching_summaries
-        ]
+        return results
 
     def fetch_summary_file_contents(self, _hash: Hash):
         """fetches the contents to create a summary file based on _hash"""
-        results = []
-        for item in self.gateway.archive.fetch_rows_by_hash(_hash):
-            results.append(self.parse_summary_file_row(item))
-        return sort_file_summary_content(results)
-
-    def parse_summary_file_row(self, row: SummaryRowFormatted) -> Dict[str, Any]:
-        """formats and replaces values for outputing to summary file"""
-        parsed_row = {
-            k: "pending" if v == constants.QUEUED else v
-            for k, v in row._asdict().items()
-        }
-        parsed_row["build"] = "Pass" if row.build == constants.PASS else "Fail"
-        parsed_row["artifacts_hash"] = file.generate_link(hash=row.artifacts_hash)
-        return parsed_row
+        return list(
+            row.formatted() for row in self.gateway.archive.fetch_rows_by_hash(_hash)
+        )
 
 
 def write_file_md(data: List[Dict[str, str]], file_path: str) -> None:
@@ -428,20 +421,6 @@ def write_file_latest(data: List[Any], file_path: str) -> None:
     latest_file_path = file_path[:last_char_index] + "/-latest.md"
     with open(latest_file_path, "w+", newline="") as _file:
         _file.write(table)
-
-
-def sort_file_summary_content(data: List[Any]) -> List[Any]:
-    """sorts the summary file contents"""
-    return sorted(
-        data,
-        key=lambda x: x["branch"]
-        + x["host"]
-        + x["compiler"]
-        + x["c_version"]
-        + x["mpi"]
-        + x["m_version"]
-        + x["o_g"],
-    )
 
 
 def generate_permutations(
@@ -553,17 +532,18 @@ def extract_branch_from_log_line(value: str) -> str:
 
 def extract_build_passing_results(
     log_paths: List[file.Build],
-) -> Dict[JobAttributes, bool]:
+) -> Dict[JobAttributes, Tuple[bool, str, str]]:
     """searches through logs to find build_passing results
 
     JobAttributes namedtuple is immutable so it can be used as a dict key
     """
-    return {
-        fetch_job_attributes(pathlib.Path(_file.file_path)): is_build_passing(
-            pathlib.Path(_file.file_path)
-        )
-        for _file in log_paths
-    }
+
+    results = {}
+    for _file in log_paths:
+        _path = pathlib.Path(_file.file_path)
+        job_attributes = fetch_job_attributes(_path)
+        results[job_attributes] = fetch_build_file_attributes(_path)
+    return results
 
 
 def fetch_job_attributes(_path: pathlib.Path) -> JobAttributes:
@@ -572,6 +552,39 @@ def fetch_job_attributes(_path: pathlib.Path) -> JobAttributes:
     return JobAttributes(
         *[result[x].lower().replace("out", "") for x in range(-9, -2, 1)]
     )
+
+
+BuildData = collections.namedtuple(
+    "BuildData", ["build_passed", "netcdf_c", "netcdf_f"]
+)
+
+
+def fetch_build_file_attributes(file_path: pathlib.Path) -> "BuildData":
+    """returns tupe of (build_passing, netcdf_c, netcdf_f)"""
+    version_pattern = re.compile(r"\d{1,}\.\d{1,}\.\d{1,}")
+    if not os.path.exists(file_path):
+        logging.error("file path does not exist [%s]", file_path)
+        raise FileNotFoundError
+    passing = False
+    netcdf_c = ""
+    netcdf_f = ""
+    with open(file_path, "r", encoding="utf-8") as _file:
+        for line in reversed(list(_file)):
+            if "ESMF library built successfully" in line:
+                passing = True
+            if "NetCDF library version:".lower() in line.lower():
+                results = version_pattern.search(line.strip())
+                if results is None:
+                    netcdf_c = ""
+                else:
+                    netcdf_c = results.group(0)
+            if "NetCDF Fortran version:".lower() in line.lower():
+                results = version_pattern.search(line.strip())
+                if results is None:
+                    netcdf_f = ""
+                else:
+                    netcdf_f = results.group(0)
+    return BuildData(passing, netcdf_c, netcdf_f)
 
 
 def is_build_passing(file_path: pathlib.Path) -> bool:
@@ -648,7 +661,7 @@ def extract_build_attributes(line, file_path) -> Dict[str, Any]:
         raise
 
 
-def fetch_test_results(file_path: str) -> Dict[str, Any]:
+def fetch_test_results(file_path: pathlib.Path) -> Dict[str, Any]:
     """Fetches test results from file_path and returns them as an ordered dict"""
 
     def clean_value(value):
@@ -691,13 +704,21 @@ def fetch_test_results(file_path: str) -> Dict[str, Any]:
     return results
 
 
-def fetch_build_result(needle: Dict[str, Any], haystack: Dict[JobAttributes, Any]):
+def fetch_build_result(
+    needle: Dict[str, Any], haystack: Dict[JobAttributes, BuildData]
+) -> BuildData:
     """searches through they haystack for the needle"""
     data = {k: needle.get(k, "none").lower() for k in (JobAttributes._fields)}
     try:
-        return haystack[JobAttributes(**data)]
+        build, netcdf_c, netcdf_f = haystack[JobAttributes(**data)]
+        return BuildData(
+            build,
+            constants.NA if netcdf_c == "" else netcdf_c,
+            constants.NA if netcdf_f == "" else netcdf_f,
+        )
+
     except KeyError:
-        return False
+        return BuildData(False, "unknown", "unknown")
 
 
 def get_branch_hashes(job, git) -> Sequence[Any]:

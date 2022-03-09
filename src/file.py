@@ -13,7 +13,6 @@ import logging
 from typing import Any, Dict, Generator, List
 
 from src import constants
-from src.gateway.database import SummaryRowFormatted
 
 
 def _replace(old: str, new: str, target: str):
@@ -105,25 +104,15 @@ class Summary(ReadOnly):
                     results[f"{key_cleaned}_fail"] = "fail"
         return results
 
-    def parse_summary_file_row(self, row: SummaryRowFormatted) -> Dict[str, Any]:
-        """formats and replaces values for outputing to summary file"""
-        parsed_row = {
-            k: "pending" if v == constants.QUEUED else v
-            for k, v in row._asdict().items()
-        }
-        parsed_row["build"] = "Pass" if row.build == constants.PASS else "Fail"
-        parsed_row["artifacts_hash"] = generate_link(hash=row.artifacts_hash)
-        return parsed_row
-
 
 def generate_link(**kwds) -> str:
     """generates a link to github to jump to the _hash passed in"""
-    return f"[artifacts](https://github.com/esmf-org/esmf-test-artifacts/tree/{kwds['hash']})"
+    return f"[artifacts]({constants.REPO_ESMF_TEST_ARTIFACTS}/tree/{kwds['hash']}/{kwds['path']})"
 
 
 def generate_link_old(**kwds) -> str:
     """generates a link to github to jump to the _hash passed in"""
-    return f"[artifacts](https://github.com/esmf-org/esmf-test-artifacts/tree/{kwds['host'].replace('/', '_')}/{kwds['branch'].replace('/', '_')}/{kwds['host'].replace('/', '_')}/{kwds['compiler']}/{kwds['c_version']}/{kwds['o_g']}/{kwds['mpi']}/{kwds['m_version'].lower()})"
+    return f"[artifacts]({constants.REPO_ESMF_TEST_ARTIFACTS}/tree/{kwds['host'].replace('/', '_')}/{kwds['branch'].replace('/', '_')}/{kwds['host'].replace('/', '_')}/{kwds['compiler']}/{kwds['c_version']}/{kwds['o_g']}/{kwds['mpi']}/{kwds['m_version'].lower()})"
 
 
 def sort_file_summary_content(data: List[Any]) -> List[Any]:

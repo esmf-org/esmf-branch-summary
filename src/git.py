@@ -109,7 +109,7 @@ class Git:
         """git fetch"""
         return self._command_safe(["git", "fetch"], self.repopath)
 
-    def add(self, _file_path=None) -> subprocess.CompletedProcess:
+    def add(self, _file_path=None, force=False) -> subprocess.CompletedProcess:
         """
         git add --all
         git add <_file_path>
@@ -117,6 +117,8 @@ class Git:
         cmd = ["git", "add", "--all"]
         if _file_path is not None:
             cmd = ["git", "add", _file_path]
+        if force:
+            cmd.insert(2, "-f")
         return self._command_safe(cmd, self.repopath)
 
     def checkout(
@@ -163,12 +165,16 @@ class Git:
             cmd.append(branch)
         return self._command_safe(cmd, self.repopath)
 
-    def push(self, destination="origin", branch=None) -> subprocess.CompletedProcess:
+    def push(
+        self, destination="origin", branch=None, force=False
+    ) -> subprocess.CompletedProcess:
         """
         git push <destination>
         git push <destination> <branch>
         """
         cmd = ["git", "push", destination]
+        if force:
+            cmd.append("-f")
         if branch is not None:
             cmd.append(branch)
         return self._command_safe(cmd, self.repopath)
@@ -202,25 +208,23 @@ def from_shallow_clone(url, _path: pathlib.Path) -> "Git":
     logging.debug("cloning %s into %s", url, repopath)
     if not os.path.exists(_path):
         os.mkdir(_path)
-    temp = Git(pathlib.Path(repopath))
+    repo = Git(pathlib.Path(repopath))
     try:
-        temp.clone(url, repopath)
+        repo.clone(url, repopath)
     except GitError:
         pass
-    return temp
-    # shutil.rmtree(_path)
+    return repo
 
 
-def _from_clone(url, _path: pathlib.Path) -> "Git":
+def from_clone(url, _path: pathlib.Path) -> "Git":
     """creates a Git instance from a url"""
     repopath = pathlib.Path(os.path.join(_path, extract_parent_dir_name(url)))
     logging.debug("cloning %s into %s", url, repopath)
     if not os.path.exists(_path):
         os.mkdir(_path)
-    temp = Git(pathlib.Path(_path))
-    temp.clone(url, _path)
-    return temp
-    # shutil.rmtree(_path)
+    repo = Git(pathlib.Path(_path))
+    repo.clone(url, _path)
+    return repo
 
 
 def extract_parent_dir_name(value: str):

@@ -1,3 +1,3 @@
 # pylint: skip-file
 
-from .database import Archive, SummaryRow, SummaryRowFormatted
+from .database import Archive, SummaryRow

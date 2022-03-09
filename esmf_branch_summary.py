@@ -106,7 +106,7 @@ def main():
     # git summaries instance
     logging.debug("cloning summaries")
     git_summaries = _git.from_shallow_clone(
-        constants.SUMMARIES_REPO,
+        constants.REPO_ESMF_BRANCH_SUMMARY,
         pathlib.Path(temp_dir),
     )
     logging.debug("pulling summaries")
@@ -121,7 +121,7 @@ def main():
         ),
     )
     logging.info(
-        "itterating over %s branches in %s machines over %s most recent branches",
+        "itterating over %s branches in %s machines over %s most recent commits",
         "all" if not args.branches else len(args.branches),
         len(constants.MACHINE_NAME_LIST),
         args.number,
