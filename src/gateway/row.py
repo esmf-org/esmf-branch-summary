@@ -85,9 +85,7 @@ class SummaryRow:
         parsed_row["mpi"] = f"{self.mpi}/{self.m_version}"
 
         # concat netcdf versions
-        parsed_row[
-            "netcdf"
-        ] = f"{self.row.get('netcdf_c', 'N')} {self.row.get('netcdf_f', 'A')}"
+        parsed_row["netcdf"] = f"{self.netcdf_c} {self.netcdf_f}"
 
         # generate link for github
         parsed_row["artifacts_hash"] = file.generate_link(
