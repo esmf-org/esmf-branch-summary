@@ -13,8 +13,8 @@ import time
 from typing import Any, Dict, Generator, List
 import abc
 
-from src import constants
-from src import file
+
+from src.gateway.row import SummaryRow
 
 
 SummaryRowData = collections.namedtuple(
