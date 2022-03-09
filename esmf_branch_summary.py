@@ -95,6 +95,13 @@ def main():
 
     # archive instance
     archive = _gateway.Archive(pathlib.Path(compass.archive_path))
+    temp_dir = get_temp_dir()
+
+    if args.reset:
+        logging.info("removing %s and %s", archive.db_path, temp_dir)
+        os.remove(archive.db_path)
+        shutil.rmtree(temp_dir)
+        exit(0)
 
     # git artifacts instance
     git_artifacts = _git.Git(pathlib.Path(compass.repopath))
