@@ -81,8 +81,8 @@ class SummaryRow:
         parsed_row["build"] = "pass" if self.build == constants.PASS else "fail"
 
         # format item and versions into one row
-        parsed_row["compiler"] = f"{self.compiler}/{self.c_version}"
-        parsed_row["mpi"] = f"{self.mpi}/{self.m_version}"
+        parsed_row["compiler"] = f"{self.compiler} {self.c_version}"
+        parsed_row["mpi"] = f"{self.mpi} {self.m_version}"
 
         # concat netcdf versions
         parsed_row["netcdf"] = f"{self.netcdf_c} {self.netcdf_f}"
