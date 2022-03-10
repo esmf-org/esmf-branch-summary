@@ -399,14 +399,18 @@ def write_file_md(data: List[Dict[str, str]], file_path: str) -> None:
     """writes markdown file"""
     logging.debug("writing file md: %s", file_path)
     table = tabulate(data, headers="keys", showindex="always", tablefmt="github")
-    with open(file_path + ".md", "w+", newline="") as _file:
+    with open(
+        file_path + ".md", "w+", newline="", encoding=constants.DEFAULT_FILE_ENCODING
+    ) as _file:
         _file.write(table)
 
 
 def write_file_csv(data: List[Dict[str, str]], file_path: str) -> None:
     """writes csv file"""
     logging.debug("writing file csv[%i]: %s", len(data), file_path)
-    with open(file_path + ".csv", "w+", newline="") as csv_file:
+    with open(
+        file_path + ".csv", "w+", newline="", encoding=constants.DEFAULT_FILE_ENCODING
+    ) as csv_file:
         writer = csv.writer(csv_file, delimiter=",", quoting=csv.QUOTE_MINIMAL)
         writer.writerow(data[0].keys())
         for row in data:
@@ -419,7 +423,9 @@ def write_file_latest(data: List[Any], file_path: str) -> None:
     table = tabulate(data, headers="keys", showindex="always", tablefmt="github")
     last_char_index = file_path.rfind("/")
     latest_file_path = file_path[:last_char_index] + "/-latest.md"
-    with open(latest_file_path, "w+", newline="") as _file:
+    with open(
+        latest_file_path, "w+", newline="", encoding=constants.DEFAULT_FILE_ENCODING
+    ) as _file:
         _file.write(table)
 
 
