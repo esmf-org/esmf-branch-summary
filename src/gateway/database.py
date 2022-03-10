@@ -52,7 +52,7 @@ class Archive(Database):
     def create_table(self):
         cur = self.con.cursor()
         cur.execute(
-            """CREATE TABLE if not exists Summaries (branch, host, compiler, c_version, mpi, m_version, o_g, os, u_pass, u_fail, s_pass, s_fail, e_pass, e_fail, nuopc_pass, nuopc_fail, build, netcdf_c, netcdf_f, artifacts_hash PRIMARY KEY, branch_hash, modified DATETIME DEFAULT CURRENT_TIMESTAMP)"""
+            """CREATE TABLE if not exists Summaries (branch, host, compiler, c_version, mpi, m_version, o_g, os, u_pass, u_fail, s_pass, s_fail, e_pass, e_fail, nuopc_pass, nuopc_fail, build, netcdf_c, netcdf_f, artifacts_hash, branch_hash, modified DATETIME DEFAULT CURRENT_TIMESTAMP, PRIMARY KEY (branch, host, compiler, compiler, c_version, mpi, m_version, o_g, os))"""
         )
         cur.execute(
             """CREATE INDEX if not exists summary_branch_hash_idx ON Summaries (branch_hash)"""
