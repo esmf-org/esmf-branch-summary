@@ -47,6 +47,7 @@ class Archive(Database):
 
     def __init__(self, db_path: pathlib.Path):
         self.con = sqlite3.connect(str(db_path))
+        self.db_path = db_path
 
     def create_table(self):
         cur = self.con.cursor()
