@@ -62,7 +62,7 @@ class Archive(Database):
     def insert_rows(self, data: List[Dict[str, Any]]) -> int:
         self.create_table()
 
-        rows = list(SummaryRowData(**row, modified=str(time.time())) for row in data)
+        rows = list(SummaryRowData(**row) for row in data)
         cur = self.con.cursor()
         cur.executemany(
             "INSERT OR REPLACE INTO summaries VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
@@ -81,13 +81,13 @@ class Archive(Database):
         return (SummaryRow(dict(zip(columns, values))) for values in cur.fetchall())
 
 
-def to_summary_row(item: Dict[str, Any], modified: str):
+def to_summary_row(item: Dict[str, Any]):
     """converts dict to SummaryRow"""
-    return SummaryRowData(**item, modified=modified)
+    return SummaryRowData(**item)
 
 
 def to_summary_rows(
-    data: List[Dict[str, Any]], modified: str
+    data: List[Dict[str, Any]]
 ) -> Generator[SummaryRowData, None, None]:
     """returns a generator of summary rows"""
-    return (to_summary_row(item, modified) for item in data)
+    return (to_summary_row(item) for item in data)

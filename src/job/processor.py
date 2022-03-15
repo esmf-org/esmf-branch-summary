@@ -59,6 +59,7 @@ TestResult = collections.namedtuple(
         "build_passed",
         "artifacts_hash",
         "branch_hash",
+        "modified",
     ],
 )
 
@@ -196,7 +197,6 @@ class Processor:
     def write_archive(self, data: List[Any], _hash: Hash) -> None:
         """writes the provided data to the archive"""
         logging.debug("writing archive %s length %i", _hash, len(data))
-        self.gateway.archive.create_table()
         result = self.gateway.archive.insert_rows([item for item in data])
         logging.info("processed [%i] rows", result)
 
@@ -334,13 +334,13 @@ class Processor:
     def write_files(self, _hash: Hash, file_path: str, is_latest: bool = False):
         """writes all file types required to disk"""
         logging.debug("writing files %s", file_path)
+        summary_file_contents = self.fetch_summary_file_contents(_hash)
         data: List[Dict[str, Any]] = list(
             [
                 {
                     **item,
-                    **{"modified": datetime.datetime.fromtimestamp(item["modified"])},
                 }
-                for item in self.fetch_summary_file_contents(_hash)
+                for item in summary_file_contents
             ]
         )
 
@@ -365,6 +365,16 @@ class Processor:
             .strip()
         )
 
+    def fetch_file_commit_timestamp(self, _path: pathlib.Path):
+        """returns the last hash for the files commit history"""
+        return (
+            self.gateway.git_artifacts.log(
+                "--format=%cd", "--date=iso", "--", str(_path)
+            )
+            .stdout.split("\n")[0]
+            .strip()
+        )
+
     def compile_test_results(
         self,
         matching_summaries: List[file.Summary],
@@ -381,6 +391,9 @@ class Processor:
                 TestResult(
                     **temp,
                     artifacts_hash=self.fetch_file_commit_hash(
+                        pathlib.Path(_file.file_path)
+                    ),
+                    modified=self.fetch_file_commit_timestamp(
                         pathlib.Path(_file.file_path)
                     ),
                     branch_hash=str(_hash),
