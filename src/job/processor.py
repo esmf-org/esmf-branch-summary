@@ -315,6 +315,7 @@ class Processor:
         self.gateway.git_artifacts.pull()
 
         for idx, _hash in enumerate(self.get_recent_branch_hashes(job)):
+            logging.debug(idx, _hash)
             summary = self.generate_summary(_hash, job)
             if len(summary) == 0:
                 logging.info(
