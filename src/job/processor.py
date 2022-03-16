@@ -745,9 +745,10 @@ def get_branch_hashes(job, git) -> Sequence[Any]:
     """Uses git log to determine all unique hashes for a branch_name/[machine_name]"""
     # TODO Should this have the "--all" flag?
     result = git.log("--format=%B", f"origin/{job.machine_name}")
+    pattern = re.compile(sanitize_branch_name(job.branch_name))
     _stdout = [
         line.strip()
         for line in result.stdout.split("\n")
-        if sanitize_branch_name(job.branch_name) in line and job.machine_name in line
+        if pattern.search(line) is not None and job.machine_name in line
     ]
     return UniqueList((Hash(x) for x in _stdout if Hash(x) != ""))[: job.qty]
