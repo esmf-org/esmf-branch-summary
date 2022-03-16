@@ -530,7 +530,7 @@ def find_files(
                 with open(file_path, "r", errors="ignore", encoding="utf-8") as _file:
                     for line in _file.readlines():
                         if any(
-                            str(search_string) in line
+                            re.match(search_string, line)
                             for search_string in value_search_strings
                         ):
                             bisect.insort(results, os.path.join(root, file_path))
