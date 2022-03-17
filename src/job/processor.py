@@ -203,7 +203,7 @@ class Processor:
         self, matching_summaries: List[Any], matching_logs: List[Any], _hash: Hash
     ) -> None:
         """this method is soley for additional verification and should be removed
-        
+
         @deprecated since 20220317 RRL
         """
         if not matching_summaries and not matching_logs:
@@ -541,29 +541,28 @@ def find_files(
 
                             if found:
                                 _hash = line.strip()
-                                output = (
-                                    search_string,
-                                    _hash,
-                                    is_tagged_version(search_string),
-                                )
-                                logging.info(output)
-                                if (
-                                    is_tagged_version(search_string)
-                                    and _hash == search_string
-                                ):
-                                    logging.info("Matched tagged version %s", _hash)
+                                if tagged_version_match(search_string, _hash):
+                                    logging.debug("Matched tagged version %s", _hash)
                                     bisect.insort(
                                         results, os.path.join(root, file_path)
                                     )
-                                if not is_tagged_version(search_string) and len(
-                                    _hash
-                                ) >= len(search_string):
-                                    logging.info("Matched other version %s", _hash)
+                                if not_tagged_version_match(search_string, _hash):
+                                    logging.debug("Matched other version %s", _hash)
                                     bisect.insort(
                                         results, os.path.join(root, file_path)
                                     )
 
     return results
+
+
+def tagged_version_match(search_string, match) -> bool:
+    """returns true if matching via tagged version match rules"""
+    return is_tagged_version(search_string) and match == search_string
+
+
+def not_tagged_version_match(search_string, match):
+    """returns true if matching via non-tagged version match rules"""
+    return not is_tagged_version(search_string) and len(match) >= len(search_string)
 
 
 def is_tagged_version(_hash):
