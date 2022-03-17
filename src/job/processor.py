@@ -567,7 +567,6 @@ def not_tagged_version_match(search_string, match):
 
 def is_tagged_version(_hash):
     """returns true if a build/test has is a tagged version"""
-    logging.debug("hash is %s", _hash)
     return False if "-g" in _hash else True
 
 
