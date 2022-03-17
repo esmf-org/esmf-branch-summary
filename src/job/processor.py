@@ -7,7 +7,6 @@ author: Ryan Long <ryan.long@noaa.gov>
 import bisect
 import collections
 import csv
-import datetime
 import functools
 import itertools
 import logging
@@ -464,7 +463,11 @@ def get_matching_logs(
         find_files(
             cwd,
             [_hash],
-            ["build.log", sanitize_branch_name(job.branch_name), job.machine_name],
+            [
+                "build.log",
+                f"/{sanitize_branch_name(job.branch_name)}/",
+                job.machine_name,
+            ],
             ["module", "python", "swp"],
         )
     )
@@ -480,7 +483,11 @@ def get_matching_summaries(
         find_files(
             cwd,
             [_hash],
-            ["summary.dat", sanitize_branch_name(job.branch_name), job.machine_name],
+            [
+                "summary.dat",
+                f"/{sanitize_branch_name(job.branch_name)}/",
+                job.machine_name,
+            ],
             ["swp"],
         )
     )
@@ -529,12 +536,40 @@ def find_files(
                 file_path = os.path.join(root, file_path)
                 with open(file_path, "r", errors="ignore", encoding="utf-8") as _file:
                     for line in _file.readlines():
-                        if any(
-                            re.match(search_string, line)
-                            for search_string in value_search_strings
-                        ):
-                            bisect.insort(results, os.path.join(root, file_path))
+                        for search_string in value_search_strings:
+                            found = re.compile(f"{search_string}").match(line)
+
+                            if found:
+                                _hash = line.strip()
+                                output = (
+                                    search_string,
+                                    _hash,
+                                    is_tagged_version(search_string),
+                                )
+                                logging.info(output)
+                                if (
+                                    is_tagged_version(search_string)
+                                    and _hash == search_string
+                                ):
+                                    logging.info("Matched tagged version %s", _hash)
+                                    bisect.insort(
+                                        results, os.path.join(root, file_path)
+                                    )
+                                if not is_tagged_version(search_string) and len(
+                                    _hash
+                                ) >= len(search_string):
+                                    logging.info("Matched other version %s", _hash)
+                                    bisect.insort(
+                                        results, os.path.join(root, file_path)
+                                    )
+
     return results
+
+
+def is_tagged_version(_hash):
+    """returns true if a build/test has is a tagged version"""
+    logging.debug("hash is %s", _hash)
+    return False if "-g" in _hash else True
 
 
 def extract_branch_from_log_line(value: str) -> str:
