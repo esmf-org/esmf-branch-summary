@@ -202,7 +202,10 @@ class Processor:
     def _verify_matches(
         self, matching_summaries: List[Any], matching_logs: List[Any], _hash: Hash
     ) -> None:
-        """this method is soley for additional verification and should be removed"""
+        """this method is soley for additional verification and should be removed
+        
+        @deprecated since 20220317 RRL
+        """
         if not matching_summaries and not matching_logs:
             results = subprocess.run(
                 [
@@ -252,9 +255,6 @@ class Processor:
                 "no summary.dat found containing %s; no test data can be collected",
                 _hash,
             )
-
-        # TODO Remove after sending to prod
-        self._verify_matches(matching_summaries, matching_logs, _hash)
 
         build_passing_results = extract_build_passing_results(matching_logs)
         logging.debug("finished reading logs")
