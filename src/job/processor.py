@@ -316,15 +316,15 @@ class Processor:
         for idx, _hash in enumerate(self.get_recent_branch_hashes(job)):
             logging.info("processing hash [%s: %s]", idx, _hash)
             summary = self.generate_summary(_hash, job)
-            if len(summary) == 0:
+            if len(summary) > 0:
+                self.send_summary_to_repo(job, summary, _hash, idx == 0)
+            else:
                 logging.info(
                     "missing summary data for %s, %s [%s]",
                     _hash,
                     job.branch_name,
                     job.machine_name,
                 )
-                continue
-            self.send_summary_to_repo(job, summary, _hash, idx == 0)
 
     def _fetch_git_log(self):
         """returns git log for esmf"""
