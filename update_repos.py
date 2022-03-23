@@ -52,7 +52,7 @@ def current_machine(_hostname: str, machines: List[Machine]) -> Machine:
     raise SystemError(f"could not match hostname[{_hostname}]")
 
 
-CONFIG_PATH = pathlib.Path("./update_repos.json").resolve()
+CONFIG_PATH = pathlib.Path(ROOT / "./update_repos.json").resolve()
 
 
 def main():
