@@ -17,7 +17,7 @@ from src.git import Git
 
 ROOT = pathlib.Path(__file__).parent.resolve()
 
-LOG_FILE_PATH = os.path.join(ROOT, f"{os.path.basename(__file__)[:-3]}.log")
+LOG_FILE_PATH = pathlib.Path(ROOT / f"{os.path.basename(__file__)[:-3]}.log").resolve()
 
 logging.basicConfig(
     level=logging.DEBUG,
@@ -69,7 +69,7 @@ def main():
         logging.debug("pulling [%s]", _path)
         Git(pathlib.Path(_path).resolve()).pull()
     summary_repo = Git(pathlib.Path(".").resolve())
-    summary_repo.add(LOG_FILE_PATH, force=True)
+    summary_repo.add(ROOT / LOG_FILE_PATH, force=True)
     summary_repo.commit(f"update {LOG_FILE_PATH}")
     summary_repo.push(force=True)
 
