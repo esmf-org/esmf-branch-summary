@@ -67,7 +67,7 @@ def main():
     logging.debug("identified machine as [%s]", machine.machine_name)
     for _path in machine.update_paths:
         logging.debug("pulling [%s]", _path)
-        Git(_path).pull()
+        Git(pathlib.Path(_path)).absolute().pull()
     summary_repo = Git(pathlib.Path(".").resolve())
     summary_repo.add(LOG_FILE_PATH, force=True)
     summary_repo.commit(f"update {LOG_FILE_PATH}")
