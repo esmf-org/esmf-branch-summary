@@ -52,7 +52,7 @@ def current_machine(_hostname: str, machines: List[Machine]) -> Machine:
     raise SystemError(f"could not match hostname[{_hostname}]")
 
 
-CONFIG_PATH = pathlib.Path(os.path.join(ROOT, "./update_repos.json"))
+CONFIG_PATH = pathlib.Path("./update_repos.json").resolve()
 
 
 def main():
@@ -67,7 +67,7 @@ def main():
     logging.debug("identified machine as [%s]", machine.machine_name)
     for _path in machine.update_paths:
         logging.debug("pulling [%s]", _path)
-        Git(pathlib.Path(_path)).absolute().pull()
+        Git(pathlib.Path(_path).resolve()).pull()
     summary_repo = Git(pathlib.Path(".").resolve())
     summary_repo.add(LOG_FILE_PATH, force=True)
     summary_repo.commit(f"update {LOG_FILE_PATH}")
