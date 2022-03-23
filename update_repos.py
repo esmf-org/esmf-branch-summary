@@ -68,7 +68,7 @@ def main():
     for _path in machine.update_paths:
         logging.debug("pulling [%s]", _path)
         Git(pathlib.Path(_path).resolve()).pull()
-    summary_repo = Git(pathlib.Path(".").resolve())
+    summary_repo = Git(ROOT)
     summary_repo.add(ROOT / LOG_FILE_PATH, force=True)
     summary_repo.commit(f"update {LOG_FILE_PATH}")
     summary_repo.push(force=True)
