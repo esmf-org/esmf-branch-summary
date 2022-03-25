@@ -53,10 +53,5 @@ class ViewCLI:
             default="info",
             help=("Provide logging level. " "Example --log debug', default='info'"),
         )
-        parser.add_argument(
-            "--reset",
-            action="store_true",
-            help=("deletes the database and temporary directories persisted by the app"),
-        )
 
         return parser.parse_args()
