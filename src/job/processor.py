@@ -1,6 +1,5 @@
 """
-Represents A Job, being all the attribtues, rules, and excutions in order
-to get a summary results from a repository of test artifacts.
+Processeses job requests into summary results.
 
 author: Ryan Long <ryan.long@noaa.gov>
 """
