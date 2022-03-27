@@ -542,12 +542,12 @@ def find_files(
                             if found:
                                 _hash = line.strip()
                                 if tagged_version_match(search_string, _hash):
-                                    logging.debug("Matched tagged version %s", _hash)
+                                    logging.debug("matched tagged version %s", _hash)
                                     bisect.insort(
                                         results, os.path.join(root, file_path)
                                     )
                                 if not_tagged_version_match(search_string, _hash):
-                                    logging.debug("Matched other version %s", _hash)
+                                    logging.debug("matched other version %s", _hash)
                                     bisect.insort(
                                         results, os.path.join(root, file_path)
                                     )
