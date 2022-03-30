@@ -26,18 +26,18 @@ REPO_ESMF_BRANCH_SUMMARY = _PROD_REPO if is_prod else _DEV_REPO
 # Machines
 MACHINE_NAME_LIST = sorted(
     [
-        "cori",
-        "cheyenne",
+        # "cori",
+        # "cheyenne",
         "hera",
-        "orion",
-        "jet",
-        "gaea",
-        "discover",
-        "chianti",
-        "acorn",
-        "gaffney",
-        "izumi",
+        # "orion",
+        # "jet",
+        # "gaea",
+        # "discover",
+        # "chianti",
+        # "acorn",
+        # "gaffney",
+        # "izumi",
         # "koehr",
-        "onyx",
+        # "onyx",
     ]
 )
