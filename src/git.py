@@ -12,6 +12,7 @@ import os
 
 import subprocess
 import pathlib
+import time
 from typing import Any, List, Union
 
 
@@ -22,6 +23,7 @@ class Git:
     """Encapsulate Git functionality"""
 
     WARNINGS = ["not something we can merge"]
+    RETRIES = ["index.lock"]
 
     def __init__(self, repopath: pathlib.Path):
         self.repopath = repopath
@@ -53,6 +55,10 @@ class Git:
                     (warning for warning in self.WARNINGS if warning in error.stderr)
                 ):
                     logging.warning(error.stderr)
+                if any(retry for retry in self.RETRIES if retry in error.stderr):
+                    logging.warning("The repository is being used by another process, retrying in 60 seconds.")
+                    time.sleep(60)
+                    self._command_safe(cmd, cwd)
                 else:
                     raise GitError(error.stderr) from error
             return subprocess.CompletedProcess(
