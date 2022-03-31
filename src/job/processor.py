@@ -13,7 +13,6 @@ import os
 import pathlib
 import re
 import shutil
-import subprocess
 from typing import Any, Dict, Generator, List, Sequence, Tuple, Union
 
 from tabulate import tabulate
@@ -369,7 +368,8 @@ class Processor:
     def fetch_summary_file_contents(self, _hash: Hash):
         """fetches the contents to create a summary file based on _hash"""
         return list(
-            row.formatted() for row in self.gateway.archive.fetch_rows_by_hash(_hash)
+            # row.formatted() for row in self.gateway.archive.fetch_rows_by_hash(_hash)
+            row.formatted() for row in self.gateway.archive.fetch_all_rows()
         )
 
 
