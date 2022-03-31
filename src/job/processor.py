@@ -198,39 +198,6 @@ class Processor:
         result = self.gateway.archive.insert_rows([item for item in data])
         logging.info("processed [%i] rows", result)
 
-    def _verify_matches(
-        self, matching_summaries: List[Any], matching_logs: List[Any], _hash: Hash
-    ) -> None:
-        """this method is soley for additional verification and should be removed
-
-        @deprecated since 20220317 RRL
-        """
-        if not matching_summaries and not matching_logs:
-            results = subprocess.run(
-                [
-                    "grep",
-                    "-r",
-                    "-n",
-                    "-w",
-                    ".",
-                    "--exclude=esmf-branch-summary.log",
-                    "--exclude-dir=.git",
-                    "-e",
-                    str(_hash),
-                ],
-                cwd=self.gateway.compass.repopath,
-                check=False,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-                encoding="utf-8",
-            )
-            if results.stdout != "":
-                logging.error(
-                    "could not verify matches, grep returned %i ...\n[%s]",
-                    len(results.stdout.splitlines()),
-                    [x for x in results.stdout.splitlines()[:11]],
-                )
-
     def generate_summary(self, _hash: Hash, job: JobRequest) -> List[Any]:
         """generates summary based on _hash and job and returns the results"""
         logging.debug("generating summary for [%s]", _hash)
@@ -261,7 +228,6 @@ class Processor:
         result = self.compile_test_results(
             matching_summaries, build_passing_results, _hash
         )
-        # TODO
         return list([x._asdict() for x in result])
 
     def send_summary_to_repo(
