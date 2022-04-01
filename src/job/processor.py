@@ -278,7 +278,7 @@ class Processor:
         self.gateway.git_artifacts.pull()
 
         branch_hashes = set(
-            self.get_recent_branch_hashes(job)
+            list(self.get_recent_branch_hashes(job))
             + self.gateway.archive.fetch_all_branch_hashes(job.branch_name)
         )
 
