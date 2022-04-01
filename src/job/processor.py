@@ -252,6 +252,8 @@ class Processor:
             generate_commit_message(job.branch_name, _hash)
         )
 
+        self.gateway.git_summaries.push()
+
         logging.info(
             "finished summary for B:%s M: %s [%s]",
             job.branch_name,
