@@ -248,6 +248,9 @@ class Processor:
             job.branch_name
         ):
             print("WRITING: ", _hash, job.branch_name)
+            output_file_path_prefix = os.path.abspath(
+                os.path.join(branch_path, str(_hash))
+            )
             self.write_files(_hash, output_file_path_prefix, is_latest)
 
         logging.debug("adding all modified files in summary")
