@@ -279,7 +279,7 @@ class Processor:
 
         branch_hashes = set(
             self.get_recent_branch_hashes(job)
-            + self.gateway.archive.fetch_all_branch_hashes()
+            + self.gateway.archive.fetch_all_branch_hashes(job.branch_name)
         )
 
         for idx, _hash in enumerate(branch_hashes):
