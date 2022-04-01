@@ -379,9 +379,9 @@ class Processor:
     def fetch_summary_file_contents(self, _hash: Hash):
         """fetches the contents to create a summary file based on _hash"""
         return list(
-            # row.formatted() for row in self.gateway.archive.fetch_rows_by_hash(_hash)
-            row.formatted()
-            for row in self.gateway.archive.fetch_rows_by_branch()
+            row.formatted() for row in self.gateway.archive.fetch_rows_by_hash(_hash)
+            # row.formatted()
+            # for row in self.gateway.archive.fetch_rows_by_branch()
         )
 
 
