@@ -277,7 +277,12 @@ class Processor:
         logging.debug("pulling from %s", job.machine_name)
         self.gateway.git_artifacts.pull()
 
-        for idx, _hash in enumerate(self.get_recent_branch_hashes(job)):
+        branch_hashes = set(
+            self.get_recent_branch_hashes(job)
+            + self.gateway.archive.fetch_all_branch_hashes()
+        )
+
+        for idx, _hash in enumerate(branch_hashes):
             logging.info("processing hash [%s: %s]", idx, _hash)
             summary = self.generate_summary(_hash, job)
             if len(summary) > 0:
@@ -369,7 +374,8 @@ class Processor:
         """fetches the contents to create a summary file based on _hash"""
         return list(
             # row.formatted() for row in self.gateway.archive.fetch_rows_by_hash(_hash)
-            row.formatted() for row in self.gateway.archive.fetch_all_rows()
+            row.formatted()
+            for row in self.gateway.archive.fetch_rows_by_branch()
         )
 
 

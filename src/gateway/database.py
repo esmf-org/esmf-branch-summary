@@ -80,13 +80,21 @@ class Archive(Database):
         columns = list(x[0] for x in cur.description)
         return (SummaryRow(dict(zip(columns, values))) for values in cur.fetchall())
 
-    def fetch_all_rows(self):
+    def fetch_rows_by_branch(self):
         cur = self.con.cursor()
         cur.execute(
             """SELECT branch, host, compiler, c_version, mpi, m_version, o_g, os, build, u_pass, u_fail, s_pass, s_fail, e_pass, e_fail, nuopc_pass, nuopc_fail, netcdf_c, netcdf_f, artifacts_hash, modified FROM Summaries ORDER BY branch, host, compiler, c_version, mpi, m_version, o_g"""
         )
         columns = list(x[0] for x in cur.description)
         return (SummaryRow(dict(zip(columns, values))) for values in cur.fetchall())
+
+    def fetch_all_branch_hashes(self, branch_name):
+        cur = self.con.cursor()
+        cur.execute(
+            """select DISTINCT(branch_hash) from Summaries where branch = ?""",
+            (branch_name,),
+        )
+        return cur.fetchall()
 
 
 def to_summary_row(item: Dict[str, Any]):
