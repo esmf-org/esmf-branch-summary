@@ -242,7 +242,11 @@ class Processor:
         output_file_path_prefix = os.path.abspath(os.path.join(branch_path, str(_hash)))
 
         self.write_archive(summary, _hash)
-        self.write_files(_hash, output_file_path_prefix, is_latest)
+        for _hash in self.gateway.archive.fetch_all_branch_hashes(job.branch_name):
+            self.write_files(_hash, output_file_path_prefix, is_latest)   
+        
+
+        # self.write_files(_hash, output_file_path_prefix, is_latest)
 
         logging.debug("adding all modified files in summary")
         self.gateway.git_summaries.add()
@@ -279,12 +283,7 @@ class Processor:
         logging.debug("pulling from %s", job.machine_name)
         self.gateway.git_artifacts.pull()
 
-        branch_hashes = set(
-            list(self.get_recent_branch_hashes(job))
-            + self.gateway.archive.fetch_all_branch_hashes(job.branch_name)
-        )
-
-        for idx, _hash in enumerate(branch_hashes):
+        for idx, _hash in enumerate(self.get_recent_branch_hashes(job)):
             logging.info("processing hash [%s: %s]", idx, _hash)
             summary = self.generate_summary(_hash, job)
             if len(summary) > 0:
