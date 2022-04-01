@@ -88,7 +88,7 @@ class Archive(Database):
         columns = list(x[0] for x in cur.description)
         return (SummaryRow(dict(zip(columns, values))) for values in cur.fetchall())
 
-    def fetch_all_branch_hashes(self, branch_name):
+    def fetch_all_branch_hashes_by_branch_name(self, branch_name):
         cur = self.con.cursor()
         cur.execute(
             """select DISTINCT(branch_hash) from Summaries where branch = ?""",
