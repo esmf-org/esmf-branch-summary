@@ -12,6 +12,7 @@ import pathlib
 import re
 import socket
 from typing import List
+from src.constants import DEFAULT_FILE_ENCODING
 
 from src.git import Git
 
@@ -33,7 +34,7 @@ Machine = collections.namedtuple(
 
 def load_config(_path: pathlib.Path):
     """loads json configuration"""
-    with open(_path, "r") as _file:
+    with open(_path, "r", encoding=DEFAULT_FILE_ENCODING) as _file:
         return json.load(_file)
 
 
