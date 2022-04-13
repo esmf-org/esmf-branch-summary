@@ -7,7 +7,10 @@ author: Ryan Long <ryan.long@noaa.gov>
 import logging
 import os
 import pathlib
+import socket
 import subprocess
+
+from src.git import Git
 
 
 ROOT = pathlib.Path(__file__).parent.resolve()
@@ -23,7 +26,9 @@ logging.basicConfig(
 
 
 def hostname() -> str:
-    return subprocess.run('hostname', encoding="utf-8", stdout=subprocess.PIPE, stderr=subprocess.PIPE).stdout[:-1]
+    """returns os hostname"""
+    logging.debug("fetching hostname from os")
+    return socket.gethostname()
 
 
 def module_av() -> subprocess.CompletedProcess:
@@ -40,7 +45,7 @@ def module_av() -> subprocess.CompletedProcess:
             cwd=ROOT,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
-	    shell=True,
+            shell=True,
             check=True,
             encoding="utf-8",
         )
@@ -50,5 +55,13 @@ def module_av() -> subprocess.CompletedProcess:
 
 
 if __name__ == "__main__":
-    with open(f"./MODULES_{hostname()}.md", "w", encoding="utf-8") as _file:
+    file_path = pathlib.Path(os.path.join(ROOT, f"MODULES_{hostname()}.md"))
+    with open(file_path, "w", encoding="utf-8") as _file:
         _file.write(module_av().stdout)
+
+        summary_repo = Git(ROOT)
+        summary_repo.add(file_path, force=True)
+        summary_repo.commit(f"update {file_path}")
+        summary_repo.push(force=True)
+
+        logging.info("finished")
