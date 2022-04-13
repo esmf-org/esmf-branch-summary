@@ -61,9 +61,10 @@ if __name__ == "__main__":
         data = module_av().stdout
         _file.write(data)
 
-        summary_repo = Git(ROOT)
-        summary_repo.add(file_path, force=True)
-        summary_repo.commit(f"update {file_path}")
-        summary_repo.push(force=True)
+    summary_repo = Git(ROOT)
+    summary_repo.pull()
+    summary_repo.add(file_path, force=True)
+    summary_repo.commit(f"update {file_path}")
+    summary_repo.push(force=True)
 
-        logging.info("finished")
+    logging.info("finished")
