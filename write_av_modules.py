@@ -1,3 +1,4 @@
+# pylint:disable=duplicate-code
 """
 Writes available modules to file.
 
