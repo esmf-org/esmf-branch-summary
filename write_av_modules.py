@@ -58,7 +58,8 @@ def module_av() -> subprocess.CompletedProcess:
 if __name__ == "__main__":
     file_path = pathlib.Path(os.path.join(ROOT, f"MODULES_{hostname()}.md"))
     with open(file_path, "w", encoding="utf-8") as _file:
-        _file.write(module_av().stdout)
+        data = module_av().stdout
+        _file.write(data)
 
         summary_repo = Git(ROOT)
         summary_repo.add(file_path, force=True)
