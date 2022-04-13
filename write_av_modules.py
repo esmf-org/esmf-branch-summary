@@ -22,6 +22,10 @@ logging.basicConfig(
 )
 
 
+def hostname() -> str:
+    return subprocess.run('hostname', encoding="utf-8", stdout=subprocess.PIPE, stderr=subprocess.PIPE).stdout[:-1]
+
+
 def module_av() -> subprocess.CompletedProcess:
     """_command_safe ensures commands are run safely and raise exceptions
     on error
@@ -29,13 +33,14 @@ def module_av() -> subprocess.CompletedProcess:
     https://stackoverflow.com/questions/4917871/does-git-return-specific-return-error-codes
     """
 
-    cmd = "module avail 2>&1"
+    cmd = "module av"
     try:
         return subprocess.run(
             cmd,
             cwd=ROOT,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
+	    shell=True,
             check=True,
             encoding="utf-8",
         )
@@ -45,5 +50,5 @@ def module_av() -> subprocess.CompletedProcess:
 
 
 if __name__ == "__main__":
-    with open("./MODULES_AV.md", "w", encoding="utf-8") as _file:
+    with open(f"./MODULES_{hostname()}.md", "w", encoding="utf-8") as _file:
         _file.write(module_av().stdout)
