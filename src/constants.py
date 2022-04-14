@@ -34,6 +34,7 @@ MACHINE_NAME_LIST = sorted(
         "gaea",
         "discover",
         "chianti",
+        "catania",
         "acorn",
         "gaffney",
         "izumi",
