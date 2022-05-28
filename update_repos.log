@@ -1,6 +1,6 @@
-2022-05-28 16:45:05,478 root         INFO     starting...
-2022-05-28 16:45:05,478 root         DEBUG    loading config [/scratch1/NCEPDEV/nems/role.esmfmaint/esmf-branch-summary/update_repos.json]
-2022-05-28 16:45:05,479 root         DEBUG    fetching hostname from os
-2022-05-28 16:45:05,479 root         DEBUG    identified machine as [hera]
-2022-05-28 16:45:05,479 root         DEBUG    pulling [/home/role.esmfmaint/scratch/esmf-test-scripts]
-2022-05-28 16:45:05,949 root         DEBUG    pulling [/home/role.esmfmaint/scratch/esmf-branch-summary]
+2022-05-28 16:50:10,638 root         INFO     starting...
+2022-05-28 16:50:10,638 root         DEBUG    loading config [/scratch1/NCEPDEV/nems/role.esmfmaint/esmf-branch-summary/update_repos.json]
+2022-05-28 16:50:10,639 root         DEBUG    fetching hostname from os
+2022-05-28 16:50:10,639 root         DEBUG    identified machine as [hera]
+2022-05-28 16:50:10,639 root         DEBUG    pulling [/home/role.esmfmaint/scratch/esmf-test-scripts]
+2022-05-28 16:50:11,075 root         DEBUG    pulling [/home/role.esmfmaint/scratch/esmf-branch-summary]
