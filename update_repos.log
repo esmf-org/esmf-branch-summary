@@ -1,8 +1,6 @@
-2022-07-22 10:15:28,436 root         INFO     starting...
-2022-07-22 10:15:28,436 root         DEBUG    loading config [/scratch1/NCEPDEV/nems/role.esmfmaint/esmf-branch-summary/update_repos.json]
-2022-07-22 10:15:28,498 root         DEBUG    fetching hostname from os
-2022-07-22 10:15:28,499 root         DEBUG    identified machine as [hera]
-2022-07-22 10:15:28,499 root         DEBUG    pulling [/home/role.esmfmaint/scratch/esmf-test-scripts]
-2022-07-22 10:15:29,153 root         DEBUG    pulling [/home/role.esmfmaint/scratch/esmf-branch-summary]
-2022-07-22 10:15:32,205 root         INFO     finished
-22 10:15:30,960 root         WARNING  The repository is being used by another process, retrying in 60 seconds.
+2022-07-22 10:20:08,800 root         INFO     starting...
+2022-07-22 10:20:08,800 root         DEBUG    loading config [/scratch1/NCEPDEV/nems/role.esmfmaint/esmf-branch-summary/update_repos.json]
+2022-07-22 10:20:08,801 root         DEBUG    fetching hostname from os
+2022-07-22 10:20:08,801 root         DEBUG    identified machine as [hera]
+2022-07-22 10:20:08,801 root         DEBUG    pulling [/home/role.esmfmaint/scratch/esmf-test-scripts]
+2022-07-22 10:21:40,055 root         DEBUG    pulling [/home/role.esmfmaint/scratch/esmf-branch-summary]
